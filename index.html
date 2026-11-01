@@ -136,14 +136,14 @@
     </div>
 
     <h3 class="title is-4 has-text-centered">Object placed 14&nbsp;cm away</h3>
-    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. All views play the 7&nbsp;s episode at 2&times; speed. The front and side views show how far the arm has to reach, and the close-ups show where the fingertips end up over the object top. At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
+    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. All views play the 7&nbsp;s episode at 2&times; speed. The front and side views show how far the arm has to reach, and the close-ups look along the Y and X axes at the object top. In the close-ups, the dashed line is the object axis and the colored line is the gripper axis, so the gap between them is the error along the axis that the camera sees. The 10&nbsp;mm bar is scaled from the 15&nbsp;mm cylinder. At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
     <div class="columns is-centered">
       <div class="column">
         <div class="tabs is-toggle is-centered is-small ep-tabs">
           <ul>
-            <li class="is-active"><a data-ep="0" data-cap="Final error: DivC-PPO 1.49&nbsp;mm, PPO 5.50&nbsp;mm.">Episode 1</a></li>
-            <li><a data-ep="1" data-cap="Final error: DivC-PPO 1.29&nbsp;mm, PPO 3.67&nbsp;mm.">Episode 2</a></li>
-            <li><a data-ep="2" data-cap="Final error: DivC-PPO 1.80&nbsp;mm, PPO 7.93&nbsp;mm.">Episode 3</a></li>
+            <li class="is-active"><a data-ep="0" data-cap="Final error: DivC-PPO 1.46&nbsp;mm, PPO 5.51&nbsp;mm.">Episode 1</a></li>
+            <li><a data-ep="1" data-cap="Final error: DivC-PPO 1.38&nbsp;mm, PPO 3.68&nbsp;mm.">Episode 2</a></li>
+            <li><a data-ep="2" data-cap="Final error: DivC-PPO 1.75&nbsp;mm, PPO 7.91&nbsp;mm.">Episode 3</a></li>
           </ul>
         </div>
         <div class="ood-views">
@@ -158,17 +158,17 @@
             <video class="result ood" data-view="world_side" muted loop playsinline preload="none" aria-label="Side view, DivC-PPO left and PPO right"></video>
           </div>
           <div>
-            <p class="view-title">Close-up, side</p>
+            <p class="view-title">Close-up from the front: X error</p>
             <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-            <video class="result ood" data-view="closeup_side" muted loop playsinline preload="none" aria-label="Close-up of the gripper above the object, DivC-PPO left and PPO right"></video>
+            <video class="result ood" data-view="world_macro_front" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along Y, DivC-PPO left and PPO right"></video>
           </div>
           <div>
-            <p class="view-title">Fingertips at the object top</p>
+            <p class="view-title">Close-up from the side: Y error</p>
             <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-            <video class="result ood" data-view="macro_az90" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top from the side, DivC-PPO left and PPO right"></video>
+            <video class="result ood" data-view="world_macro_side" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along X, DivC-PPO left and PPO right"></video>
           </div>
         </div>
-        <p class="caption" id="ood-cap">Final error: DivC-PPO 1.49&nbsp;mm, PPO 5.50&nbsp;mm.</p>
+        <p class="caption" id="ood-cap">Final error: DivC-PPO 1.46&nbsp;mm, PPO 5.51&nbsp;mm.</p>
       </div>
     </div>
   </div>

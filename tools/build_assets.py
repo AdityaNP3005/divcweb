@@ -79,6 +79,43 @@ def pair(name, left, right, view, size, fps, hold_s=1.2, crop=None, eps=(0, 0), 
     write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
 
 
+def macro_frame(run_dir, row, view, size, axis, crop):
+    """Axis-aligned macro of the object top. Dashed line: object axis (always at the image center,
+    the camera looks at it). Solid line: gripper axis, placed from the logged error (ee - target).
+    Both cameras have image-right = minus the world axis they show, hence the minus sign.
+    The 10 mm bar is scaled from the 15 mm cylinder."""
+    img = frame(run_dir, row, view, size, crop)
+    h, w = img.shape[:2]
+    orange = (img[..., 2] > 180) & (img[..., 1] > 70) & (img[..., 1] < 160) & (img[..., 0] < 80)
+    cols = np.where(orange[int(h * 0.92)])[0]
+    ppm = (cols.max() - cols.min() + 1) / 15.0 if cols.size > 5 else None
+    cx = w // 2
+    for y in range(0, h, 12):
+        cv2.line(img, (cx, y), (cx, min(y + 6, h - 1)), (60, 60, 60), 1, cv2.LINE_AA)
+    e = row["err_mm"][axis]
+    color = ((16, 54, 255), (0, 153, 77))[axis]  # BGR of the Fig. 2 X / Y colours
+    if ppm and abs(e) < 40:
+        gx = int(round(cx - e * ppm))
+        cv2.line(img, (gx, 0), (gx, h - 1), color, 2, cv2.LINE_AA)
+    if ppm:
+        x0, y0 = 16, h - 16
+        cv2.rectangle(img, (x0 - 6, y0 - 26), (x0 + int(10 * ppm) + 8, y0 + 8), (255, 255, 255), -1)
+        cv2.line(img, (x0, y0), (x0 + int(round(10 * ppm)), y0), (30, 30, 30), 3)
+        cv2.putText(img, "10 mm", (x0, y0 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 30, 30), 1, cv2.LINE_AA)
+    label = f"{'XY'[axis]} error {e:+.2f} mm" if abs(e) < 100 else f"{'XY'[axis]} error {e / 10:+.1f} cm"
+    cv2.putText(img, label, (14, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 5, cv2.LINE_AA)
+    cv2.putText(img, label, (14, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
+    return img
+
+
+def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, hold_s=1.2):
+    a = [macro_frame(left, r, view, size, axis, crop) for r in episode(left, ep)]
+    b = [macro_frame(right, r, view, size, axis, crop) for r in episode(right, ep)]
+    n = max(len(a), len(b)) + int(hold_s * fps)
+    gap = np.full((size[1], GAP, 3), 255, np.uint8)
+    write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
+
+
 def single(name, run_dir, ep, views, size, fps, hold_s=1.0):
     rows = episode(run_dir, ep)
     gap = np.full((size[1], GAP, 3), 255, np.uint8)
@@ -121,9 +158,12 @@ def videos():
     for ep in (0, 1, 2):
         # front and side cameras sit on the world axes (separate capture), close-ups follow the gripper
         for view, size, src in (("world_front", (640, 360), "ood14_world"), ("world_side", (640, 360), "ood14_world"),
-                                ("closeup_side", (400, 400), "ood14_vid"), ("macro_az90", (400, 400), "ood14_vid")):
-            pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep),
-                 crop=SQUARE_MACRO if view.startswith("macro") else None)
+                                ):
+            pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep))
+        # front macro looks along -Y and shows the X error; side macro looks along +X and shows Y
+        # full frame for the front macro: the open fingers span most of its width
+        for view, axis, size, crop in (("world_macro_front", 0, (768, 432), None), ("world_macro_side", 1, (432, 432), SQUARE_MACRO)):
+            macro_pair(f"ood_ep{ep}_{view}", "divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", view, size, 20, axis, ep, crop)
 
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)
