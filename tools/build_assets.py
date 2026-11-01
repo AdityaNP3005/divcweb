@@ -112,9 +112,18 @@ def videos():
     # PPO near-target failure (ep1): never stable within 7 s
     single("ppo_fail", "ppo_nominal_seq_s42", 1, ("closeup_side", "wrist_bbox"), (450, 450), 20)
 
-    # 14 cm placement radius, same placement per episode, one frame per 10 steps -> 6 fps is 2x speed
+    # 14 cm placement radius, same placement per episode, one frame per 10 steps -> 6 fps is 2x speed.
+    # The overview camera shows how far the arm travels; front and side cameras exist only at the
+    # start and final steps, so they are shown as stills.
     for ep in (0, 1, 2):
-        pair(f"ood_ep{ep}", "divc_ood14_s42", "ppo_ood14_s42", "closeup_side", (540, 540), 6, eps=(ep, ep))
+        pair(f"ood_ep{ep}", "divc_ood14_s42", "ppo_ood14_s42", "overview_az60", W16, 6, eps=(ep, ep))
+        for view in ("overview_front", "overview_side"):
+            for tag, run_dir, row in (("start", "divc_ood14_s42", 0), ("divc", "divc_ood14_s42", -1), ("ppo", "ppo_ood14_s42", -1)):
+                r = episode(run_dir, ep)[row]
+                r = dict(r, label=r["label"]) if r["label"] in ("start", "final") else None
+                assert r, (run_dir, ep, row)
+                cv2.imwrite(str(IMG / f"ood_ep{ep}_{view.split('_')[1]}_{tag}.webp"),
+                            frame(run_dir, r, view, (640, 360)), [cv2.IMWRITE_WEBP_QUALITY, 82])
 
 
 if __name__ == "__main__":
