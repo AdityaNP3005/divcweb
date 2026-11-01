@@ -91,11 +91,10 @@ def finger_center(img):
     return (cols.min() + cols.max()) / 2 if cols.size else None
 
 
-def macro_frame(run_dir, row, view, size, axis, crop, finger_gain=None):
+def macro_frame(run_dir, row, view, size, axis, crop, near_finger=False):
     """Axis-aligned macro of the object top. Dashed line: object axis (always at the image center,
     the camera looks at it). Solid line: gripper axis, placed from the logged error (ee - target).
-    Both cameras have image-right = minus the world axis they show, hence the minus sign.
-    The 10 mm bar is scaled from the 15 mm cylinder."""
+    Both cameras have image-right = minus the world axis they show, hence the minus sign."""
     img = frame(run_dir, row, view, size, crop)
     h, w = img.shape[:2]
     orange = (img[..., 2] > 180) & (img[..., 1] > 70) & (img[..., 1] < 160) & (img[..., 0] < 80)
@@ -107,49 +106,22 @@ def macro_frame(run_dir, row, view, size, axis, crop, finger_gain=None):
     e = row["err_mm"][axis]
     color = ((16, 54, 255), (0, 153, 77))[axis]  # BGR of the Fig. 2 X / Y colours
     gx = None
-    if finger_gain:  # side: the visible finger is closer to the camera than the object axis
+    if near_finger:  # side: the visible finger is closer to the camera than the object axis
         fc = finger_center(img)
         gx = None if fc is None else int(round(fc))
     elif ppm and abs(e) < 40:  # front: both fingers lie in the object plane
         gx = int(round(cx - e * ppm))
     if gx is not None:
         cv2.line(img, (gx, 0), (gx, h - 1), color, 2, cv2.LINE_AA)
-    if ppm:
-        bar = 10 * ppm * (finger_gain or 1.0)
-        x0, y0 = 16, h - 16
-        cv2.rectangle(img, (x0 - 6, y0 - 26), (x0 + int(bar) + 8, y0 + 8), (255, 255, 255), -1)
-        cv2.line(img, (x0, y0), (x0 + int(round(bar)), y0), (30, 30, 30), 3)
-        cv2.putText(img, "10 mm", (x0, y0 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 30, 30), 1, cv2.LINE_AA)
     label = f"{'XY'[axis]} error {e:+.2f} mm" if abs(e) < 100 else f"{'XY'[axis]} error {e / 10:+.1f} cm"
     cv2.putText(img, label, (14, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 5, cv2.LINE_AA)
     cv2.putText(img, label, (14, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
     return img
 
 
-def side_gain(runs, view, size, crop):
-    """Perspective gain of the near finger over the object plane, fitted on every frame where the
-    finger is detected and the Y error exceeds 1 mm (both runs and all episodes share the camera)."""
-    ratios = []
-    for run_dir in runs:
-        for r in json.loads((CAP / run_dir / "capture_log.json").read_text()):
-            if r["t"] > 209 or not 1 < abs(r["err_mm"][1]) < 20:
-                continue
-            img = frame(run_dir, r, view, size, crop)
-            fc = finger_center(img)
-            orange = (img[..., 2] > 180) & (img[..., 1] > 70) & (img[..., 1] < 160) & (img[..., 0] < 80)
-            cols = np.where(orange[int(img.shape[0] * 0.92)])[0]
-            if fc is None or cols.size < 6:
-                continue
-            ppm = (cols.max() - cols.min() + 1) / 15.0
-            ratios.append(-(fc - img.shape[1] / 2) / (r["err_mm"][1] * ppm))
-    gain = float(np.median(ratios))
-    print(f"side finger gain {gain:.2f} from {len(ratios)} frames (IQR {np.percentile(ratios, 25):.2f}-{np.percentile(ratios, 75):.2f})")
-    return gain
-
-
-def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, finger_gain=None, hold_s=1.2):
-    a = [macro_frame(left, r, view, size, axis, crop, finger_gain) for r in episode(left, ep)]
-    b = [macro_frame(right, r, view, size, axis, crop, finger_gain) for r in episode(right, ep)]
+def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, near_finger=False, hold_s=1.2):
+    a = [macro_frame(left, r, view, size, axis, crop, near_finger) for r in episode(left, ep)]
+    b = [macro_frame(right, r, view, size, axis, crop, near_finger) for r in episode(right, ep)]
     n = max(len(a), len(b)) + int(hold_s * fps)
     gap = np.full((size[1], GAP, 3), 255, np.uint8)
     write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
@@ -159,54 +131,36 @@ def hero_data():
     """Per-axis error (mm) per captured step for the teaser traces (the PPO p95 placement)."""
     hero = {"fps": 10, "policy_hz": POLICY_HZ, "stride": 3}
     for key in ("divc", "ppo"):
-        rows = episode(f"{key}_p95_s42", 0)
+        rows = episode(f"{key}_p95_v2_s42", 0)
         hero[key] = {"t_end": rows[-1]["t"], "frames": len(rows), "t": [r["t"] for r in rows],
                      "stable": rows[-1]["label"] == "positioned",
                      "err": [[round(abs(v), 3) for v in r["err_mm"]] for r in rows]}
     (ROOT / "static/hero.json").write_text(json.dumps(hero, separators=(",", ":")))
 
 
+# one placement per condition, replayed for both policies (DualHeadPPO/.cache/run_page_v2_capture.sh)
+CONDITIONS = {"p95": 10, "ood14": 20, "noise": 20, "scale": 20}  # fps: 10 is real time, 20 is 2x
+
+
 def videos():
-    W16 = (800, 450)
     # teaser: fixed camera az60, one frame per 3 policy steps -> 10 fps is real time
     teaser_crop = ((40, 1080), (700, 1856))
     # PPO episode at its p95 final error (2.5 mm, never stable), same placement replayed for DivC-PPO
-    clips = {k: [frame(f"{k}_p95_s42", r, "fixed_az60", (720, 648), teaser_crop) for r in episode(f"{k}_p95_s42", 0)]
+    clips = {k: [frame(f"{k}_p95_v2_s42", r, "fixed_az60", (720, 648), teaser_crop) for r in episode(f"{k}_p95_v2_s42", 0)]
              for k in ("divc", "ppo")}
     n = max(map(len, clips.values())) + 12
     for key, f in clips.items():
         write(f"seq_{key}", f + [f[-1]] * (n - len(f)), 10)
 
-    gain = side_gain(("divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", "divc_nominal_axis_s42", "ppo_nominal_axis_s42"),
-                     "world_macro_side", (432, 432), SQUARE_MACRO)
-    MACROS = (("world_macro_front", 0, (768, 432), None, None), ("world_macro_side", 1, (432, 432), SQUARE_MACRO, gain))
-
-    # nominal, same placement (ep0), real time, stopped at the first stable step
-    for view in ("world_front", "world_side"):
-        pair(f"nom_{view}", "divc_nominal_axis_s42", "ppo_nominal_axis_s42", view, (640, 360), 10)
-    for view, axis, size, crop, g in MACROS:
-        macro_pair(f"nom_{view}", "divc_nominal_axis_s42", "ppo_nominal_axis_s42", view, size, 10, axis, 0, crop, g)
-    pair("nom_wrist_bbox", "divc_nominal_seq_s42", "ppo_nominal_seq_s42", "wrist_bbox", (450, 450), 10, last=(47, 65))
-
-    # PPO near-target failure (ep1): never stable within 7 s; front and side macros side by side, 2x speed
-    gap = np.full((432, GAP, 3), 255, np.uint8)
-    frames = [np.hstack([macro_frame("ppo_nominal_axis_s42", r, v, sz, ax, cr, g) if i == 0 else
-                         np.hstack([gap, macro_frame("ppo_nominal_axis_s42", r, v, sz, ax, cr, g)])
-                         for i, (v, ax, sz, cr, g) in enumerate(MACROS)])
-              for r in episode("ppo_nominal_axis_s42", 1)]
-    write("ppo_fail", frames + [frames[-1]] * 20, 20, poster=-1)
-
-    # 14 cm placement radius, same placement per episode, one frame per 3 steps -> 20 fps is 2x speed.
-    # Front and side show the reach; the macro cameras sit 22 cm from the object top.
-    for ep in (0, 1, 2):
-        # front and side cameras sit on the world axes (separate capture), close-ups follow the gripper
-        for view, size, src in (("world_front", (640, 360), "ood14_world"), ("world_side", (640, 360), "ood14_world"),
-                                ):
-            pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep))
-        # front macro looks along -Y and shows the X error; side macro looks along +X and shows Y
-        # full frame for the front macro: the open fingers span most of its width
+    # front macro looks along -Y and shows the X error; side macro looks along +X and shows Y
+    MACROS = (("world_macro_front", 0, (768, 432), None, None), ("world_macro_side", 1, (432, 432), SQUARE_MACRO, True))
+    for cond, fps in CONDITIONS.items():
+        left, right = f"divc_{cond}_v2_s42", f"ppo_{cond}_v2_s42"
+        pair(f"{cond}_world_45", left, right, "world_45", (640, 360), fps)
         for view, axis, size, crop, g in MACROS:
-            macro_pair(f"ood_ep{ep}_{view}", "divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", view, size, 20, axis, ep, crop, g)
+            macro_pair(f"{cond}_{view}", left, right, view, size, fps, axis, 0, crop, g)
+    pair("p95_wrist_bbox", "divc_p95_v2_s42", "ppo_p95_v2_s42", "wrist_bbox", (450, 450), 10)
+
 
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)

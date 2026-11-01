@@ -44,9 +44,9 @@ body { font-family: "Noto Sans", sans-serif; color: #363636; }
 .caption { margin: .75rem 0 0; font-size: .95rem; color: var(--muted); text-align: center; }
 .caption.left { text-align: left; margin-top: .75rem; }
 .lead { margin: 0 0 1.5rem; color: #4a4a4a; }
-h3.title.is-4 { margin-top: 3.5rem; }
+h3.title.is-4 { margin-top: 5rem; }
 
-.result-row { margin: 1rem 0 0; }
+.result-row { margin: 1.5rem 0 0; display: grid; grid-template-columns: 5fr 7fr; gap: 3.5rem; align-items: center; }
 .result-table th, .result-table td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .result-table th:first-child, .result-table td:first-child { text-align: left; }
 .result-table td.ours { font-weight: 700; }
@@ -64,9 +64,12 @@ video.result { display: block; width: 100%; height: auto; border-radius: 10px; b
 .footer { padding: 2.5rem 1.5rem 3rem; color: var(--muted); }
 .footer p + p { margin-top: .4rem; }
 
-.ood-views { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; }
-.view-title { text-align: center; font-family: "Google Sans", sans-serif; font-size: 1.05rem; color: #4a4a4a; margin-bottom: .25rem; }
-.ood-views > div:nth-child(-n+3) { grid-column: 1 / -1; }  /* front and side need the width to show the reach */
-.ood-views > div:nth-child(4) { grid-column: 1 / -1; max-width: 70%; margin: 0 auto; width: 100%; }
-.nominal-views > div:nth-child(4), .nominal-views > div:nth-child(5) { grid-column: auto; max-width: none; margin: 0; }
-.fail-labels { display: grid; grid-template-columns: 768fr 440fr; text-align: center; font-family: "Google Sans", sans-serif; font-size: 1rem; color: #4a4a4a; margin-bottom: .35rem; }
+/* Video groups: a clear title per view, room between groups */
+.views { display: grid; grid-template-columns: 1fr 1fr; gap: 2.75rem 2rem; margin-top: 2rem; }
+.views > .wide { grid-column: 1 / -1; }
+.view-title { font-family: "Google Sans", sans-serif; font-size: 1.3rem; font-weight: 600; color: #222; margin: 0 0 .2rem; text-align: center; }
+.view-sub { text-align: center; font-size: .95rem; color: var(--muted); margin: 0 0 .75rem; }
+.pair-labels { color: var(--muted); font-weight: 500; font-size: 1rem; margin-bottom: .4rem; }
+.views video.result { margin-bottom: 0; }
+.exp-tabs { margin-top: 1.5rem; }
+.views > .side-only { max-width: 72%; width: 100%; margin: 0 auto; }
