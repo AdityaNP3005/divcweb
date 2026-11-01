@@ -155,17 +155,6 @@ def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, finger_g
     write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
 
 
-def single(name, run_dir, ep, views, size, fps, hold_s=1.0):
-    rows = episode(run_dir, ep)
-    gap = np.full((size[1], GAP, 3), 255, np.uint8)
-    frames = []
-    for r in rows:
-        tiles = [frame(run_dir, r, v, size, SQUARE.get(v)) for v in views]
-        frames.append(np.hstack(sum([[t, gap] for t in tiles], [])[:-1]))
-    frames += [frames[-1]] * int(hold_s * fps)
-    write(name, frames, fps, poster=-1)
-
-
 def hero_data():
     """Per-axis error (mm) per captured step for the teaser traces."""
     hero = {"fps": 10, "policy_hz": POLICY_HZ, "stride": 3}
@@ -185,16 +174,27 @@ def videos():
         f = [frame(run_dir, r, "fixed_az60", (720, 648), teaser_crop) for r in rows]
         write(f"seq_{key}", f + [f[-1]] * (65 // 3 + 1 - len(f) + 12), 10)
 
-    # nominal, same placement (ep0), stopped at the first stable step
-    for view, size in (("overview_az60", W16), ("closeup_side", (540, 540)), ("wrist_bbox", (450, 450))):
-        pair(f"nom_{view}", "divc_nominal_seq_s42", "ppo_nominal_seq_s42", view, size, 10, last=(47, 65))
+    gain = side_gain(("divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", "divc_nominal_axis_s42", "ppo_nominal_axis_s42"),
+                     "world_macro_side", (432, 432), SQUARE_MACRO)
+    MACROS = (("world_macro_front", 0, (768, 432), None, None), ("world_macro_side", 1, (432, 432), SQUARE_MACRO, gain))
 
-    # PPO near-target failure (ep1): never stable within 7 s
-    single("ppo_fail", "ppo_nominal_seq_s42", 1, ("closeup_side", "wrist_bbox"), (450, 450), 20)
+    # nominal, same placement (ep0), real time, stopped at the first stable step
+    for view in ("world_front", "world_side"):
+        pair(f"nom_{view}", "divc_nominal_axis_s42", "ppo_nominal_axis_s42", view, (640, 360), 10)
+    for view, axis, size, crop, g in MACROS:
+        macro_pair(f"nom_{view}", "divc_nominal_axis_s42", "ppo_nominal_axis_s42", view, size, 10, axis, 0, crop, g)
+    pair("nom_wrist_bbox", "divc_nominal_seq_s42", "ppo_nominal_seq_s42", "wrist_bbox", (450, 450), 10, last=(47, 65))
+
+    # PPO near-target failure (ep1): never stable within 7 s; front and side macros side by side, 2x speed
+    gap = np.full((432, GAP, 3), 255, np.uint8)
+    frames = [np.hstack([macro_frame("ppo_nominal_axis_s42", r, v, sz, ax, cr, g) if i == 0 else
+                         np.hstack([gap, macro_frame("ppo_nominal_axis_s42", r, v, sz, ax, cr, g)])
+                         for i, (v, ax, sz, cr, g) in enumerate(MACROS)])
+              for r in episode("ppo_nominal_axis_s42", 1)]
+    write("ppo_fail", frames + [frames[-1]] * 20, 20, poster=-1)
 
     # 14 cm placement radius, same placement per episode, one frame per 3 steps -> 20 fps is 2x speed.
     # Front and side show the reach; the macro cameras sit 22 cm from the object top.
-    gain = side_gain(("divc_ood14_macro2_s42", "ppo_ood14_macro2_s42"), "world_macro_side", (432, 432), SQUARE_MACRO)
     for ep in (0, 1, 2):
         # front and side cameras sit on the world axes (separate capture), close-ups follow the gripper
         for view, size, src in (("world_front", (640, 360), "ood14_world"), ("world_side", (640, 360), "ood14_world"),
@@ -202,8 +202,7 @@ def videos():
             pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep))
         # front macro looks along -Y and shows the X error; side macro looks along +X and shows Y
         # full frame for the front macro: the open fingers span most of its width
-        for view, axis, size, crop, g in (("world_macro_front", 0, (768, 432), None, None),
-                                          ("world_macro_side", 1, (432, 432), SQUARE_MACRO, gain)):
+        for view, axis, size, crop, g in MACROS:
             macro_pair(f"ood_ep{ep}_{view}", "divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", view, size, 20, axis, ep, crop, g)
 
 if __name__ == "__main__":

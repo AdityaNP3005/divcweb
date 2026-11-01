@@ -49,7 +49,7 @@ h3.title.is-4 { margin-top: 3.5rem; }
 .result-row { margin: 1rem 0 0; }
 .result-table th, .result-table td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .result-table th:first-child, .result-table td:first-child { text-align: left; }
-.result-table tr.ours td { font-weight: 700; }
+.result-table td.ours { font-weight: 700; }
 
 video.result { display: block; width: 100%; height: auto; border-radius: 10px; background: #f2f2f2; margin-bottom: 1.25rem; }
 .pair-labels { display: grid; grid-template-columns: 1fr 1fr; text-align: center; font-weight: 600; font-size: 1.1rem; margin-bottom: .35rem; }
@@ -68,3 +68,5 @@ video.result { display: block; width: 100%; height: auto; border-radius: 10px; b
 .view-title { text-align: center; font-family: "Google Sans", sans-serif; font-size: 1.05rem; color: #4a4a4a; margin-bottom: .25rem; }
 .ood-views > div:nth-child(-n+3) { grid-column: 1 / -1; }  /* front and side need the width to show the reach */
 .ood-views > div:nth-child(4) { grid-column: 1 / -1; max-width: 70%; margin: 0 auto; width: 100%; }
+.nominal-views > div:nth-child(4), .nominal-views > div:nth-child(5) { grid-column: auto; max-width: none; margin: 0; }
+.fail-labels { display: grid; grid-template-columns: 768fr 440fr; text-align: center; font-family: "Google Sans", sans-serif; font-size: 1rem; color: #4a4a4a; margin-bottom: .35rem; }

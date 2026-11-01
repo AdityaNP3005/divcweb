@@ -91,12 +91,12 @@
     <div class="columns is-vcentered result-row">
       <div class="column is-5">
         <table class="table is-fullwidth result-table">
-          <thead><tr><th>Method</th><th>3-D error (mm)</th><th>Stable success (%)</th></tr></thead>
+          <thead><tr><th>Metric</th><th>PPO</th><th>DivC-PPO</th></tr></thead>
           <tbody>
-            <tr><td>PPO</td><td>1.167 &plusmn; 0.103</td><td>56.64 &plusmn; 5.53</td></tr>
-            <tr class="ours"><td>DivC-PPO</td><td>0.337 &plusmn; 0.059</td><td>100.00 &plusmn; 0.00</td></tr>
-            <tr><td>Shared-ratio control</td><td>0.647 &plusmn; 0.122</td><td>93.55 &plusmn; 5.75</td></tr>
-            <tr><td>Scrambled mapping</td><td>202.7 &plusmn; 184.3</td><td>0.00 &plusmn; 0.00</td></tr>
+            <tr><td>3-D error (mm)</td><td>1.167 &plusmn; 0.103</td><td class="ours">0.337 &plusmn; 0.059</td></tr>
+            <tr><td>Stable success (%)</td><td>56.64 &plusmn; 5.53</td><td class="ours">100.00 &plusmn; 0.00</td></tr>
+            <tr><td>Near-target failure (%)</td><td>41.15 &plusmn; 5.22</td><td class="ours">0.00 &plusmn; 0.00</td></tr>
+            <tr><td>Time to stable success (s)</td><td>2.14 &plusmn; 0.06</td><td class="ours">1.55 &plusmn; 0.03</td></tr>
           </tbody>
         </table>
         <p class="caption left">Every DivC-PPO episode ends below 1&nbsp;mm. PPO fails in the last few millimeters: 41.15% of its episodes are near-target failures.</p>
@@ -107,36 +107,49 @@
       </div>
     </div>
 
-    <h3 class="title is-4 has-text-centered">Same placement, three views</h3>
-    <p class="has-text-centered lead">One episode with an identical object placement for both policies, played in real time. Each clip stops at the first stable step: 1.57&nbsp;s for DivC-PPO and 2.17&nbsp;s for PPO.</p>
-    <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-    <video class="result" src="static/video/nom_overview_az60.webm" poster="static/img/nom_overview_az60_poster.webp" muted loop playsinline preload="none" aria-label="Overview camera, DivC-PPO left and PPO right"></video>
-    <div class="columns">
-      <div class="column">
+    <h3 class="title is-4 has-text-centered">Same placement, nominal range</h3>
+    <p class="has-text-centered lead">One episode with an identical object placement for both policies, played in real time. Each clip stops at the first stable step: 1.57&nbsp;s for DivC-PPO and 2.17&nbsp;s for PPO. The cameras look straight along the world axes. In the close-ups, the dashed line is the object axis and the colored line is the gripper axis, so the gap between them is the error that the camera sees.</p>
+    <div class="ood-views nominal-views">
+      <div>
+        <p class="view-title">Front</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" src="static/video/nom_closeup_side.webm" poster="static/img/nom_closeup_side_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips above the object, DivC-PPO left and PPO right"></video>
-        <p class="caption">Close-up of the fingertips above the object.</p>
+        <video class="result" src="static/video/nom_world_front.webm" poster="static/img/nom_world_front_poster.webp" muted loop playsinline preload="none" aria-label="Front view, DivC-PPO left and PPO right"></video>
       </div>
-      <div class="column">
+      <div>
+        <p class="view-title">Side</p>
+        <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+        <video class="result" src="static/video/nom_world_side.webm" poster="static/img/nom_world_side_poster.webp" muted loop playsinline preload="none" aria-label="Side view, DivC-PPO left and PPO right"></video>
+      </div>
+      <div>
+        <p class="view-title">Close-up from the front: X error</p>
+        <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+        <video class="result" src="static/video/nom_world_macro_front.webm" poster="static/img/nom_world_macro_front_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along Y, DivC-PPO left and PPO right"></video>
+      </div>
+      <div>
+        <p class="view-title">Close-up from the side: Y error</p>
+        <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+        <video class="result" src="static/video/nom_world_macro_side.webm" poster="static/img/nom_world_macro_side_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along X, DivC-PPO left and PPO right"></video>
+      </div>
+      <div>
+        <p class="view-title">Wrist camera with the YOLO11n box, the visual part of the observation</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
         <video class="result" src="static/video/nom_wrist_bbox.webm" poster="static/img/nom_wrist_bbox_poster.webp" muted loop playsinline preload="none" aria-label="Wrist camera with the YOLO detection box, DivC-PPO left and PPO right"></video>
-        <p class="caption">Wrist camera with the YOLO11n box. Its center and depth are the visual part of the observation.</p>
       </div>
     </div>
 
     <h3 class="title is-4 has-text-centered">PPO near-target failure</h3>
     <div class="columns is-vcentered">
       <div class="column is-8">
-        <div class="pair-labels"><span>Close-up</span><span>Wrist camera</span></div>
-        <video class="result" src="static/video/ppo_fail.webm" poster="static/img/ppo_fail_poster.webp" muted loop playsinline preload="none" aria-label="PPO hovers next to the target without becoming stable"></video>
+        <div class="fail-labels"><span>Close-up from the front: X error</span><span>Close-up from the side: Y error</span></div>
+        <video class="result" src="static/video/ppo_fail.webm" poster="static/img/ppo_fail_poster.webp" muted loop playsinline preload="none" aria-label="PPO hovers next to the target without becoming stable, front and side close-ups"></video>
       </div>
       <div class="column is-4">
-        <p class="side-text">PPO reaches the target area quickly but keeps hovering just outside the 1&nbsp;mm box. It is never stable in the 7&nbsp;s episode and ends at 1.94&nbsp;mm (X &minus;1.57, Y +1.14&nbsp;mm). This is the most common PPO failure. Played at 2&times; speed.</p>
+        <p class="side-text">PPO reaches the target area quickly but keeps hovering just outside the 1&nbsp;mm box. It is never stable in the 7&nbsp;s episode and ends at 1.92&nbsp;mm (X &minus;1.54, Y +1.14&nbsp;mm). This is the most common PPO failure. Played at 2&times; speed.</p>
       </div>
     </div>
 
     <h3 class="title is-4 has-text-centered">Object placed 14&nbsp;cm away</h3>
-    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. All views play the 7&nbsp;s episode at 2&times; speed. The front and side views show how far the arm has to reach, and the close-ups look along the Y and X axes at the object top. In the close-ups, the dashed line is the object axis and the colored line is the gripper axis, so the gap between them is the error along the axis that the camera sees. The 10&nbsp;mm bar is scaled from the 15&nbsp;mm cylinder. From the side, the visible finger is closer to the camera than the object, so there the colored line follows the finger and the bar is scaled to the finger distance (1.67&times;, fitted on 361 frames). At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
+    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. All views play the 7&nbsp;s episode at 2&times; speed. The front and side views show how far the arm has to reach, and the close-ups look along the Y and X axes at the object top. In the close-ups, the dashed line is the object axis and the colored line is the gripper axis, so the gap between them is the error along the axis that the camera sees. The 10&nbsp;mm bar is scaled from the 15&nbsp;mm cylinder. From the side, the visible finger is closer to the camera than the object, so there the colored line follows the finger and the bar is scaled to the finger distance (1.65&times;, fitted on 432 frames). At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
     <div class="columns is-centered">
       <div class="column">
         <div class="tabs is-toggle is-centered is-small ep-tabs">
