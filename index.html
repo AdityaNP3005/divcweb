@@ -54,9 +54,9 @@
       </div>
       <h2 class="subtitle has-text-centered">
         DivC-PPO gives each Cartesian axis its own reward stream, advantage, and clipped probability ratio.
-        With the same object placement, it brings X, Y, and Z into the 1&nbsp;mm box within 1.0&nbsp;s, while PPO overshoots in Y and Z and becomes stable at 2.17&nbsp;s.
+        In this placement, PPO ends 2.48&nbsp;mm from the target, close to its 95th-percentile error over the 3,072 evaluation episodes. With the same placement, DivC-PPO is stable inside the 1&nbsp;mm box after 1.57&nbsp;s.
       </h2>
-      <p class="has-text-centered is-size-7 note">Seed 42, Isaac Sim, real time. Traces show the absolute error of each axis on a log scale, and the shaded band is the 1&nbsp;mm box. <a href="#" id="replay">Replay</a></p>
+      <p class="has-text-centered is-size-7 note">Seed 42, Isaac Sim, real time. Traces show the absolute error of each axis on a log scale, and the shaded band is the 1&nbsp;mm box. DivC-PPO stops at its first stable step, and PPO runs to the 7&nbsp;s time limit. <a href="#" id="replay">Replay</a></p>
     </div>
   </div>
 </section>
@@ -258,7 +258,8 @@
         el("line", { class: v === 1 ? "bandline" : "grid", x1: L, x2: W - R, y1: y(v), y2: y(v) }, svg);
         el("text", { x: L - 5, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v >= 1 ? v : String(v).replace(/^0/, "");
       }
-      for (let s = 0; s <= 2; s += 0.5) el("text", { x: x(s * hz), y: H - 6, "text-anchor": "middle" }, svg).textContent = s + " s";
+      const span = tMax / hz, tick = span > 3 ? 1 : 0.5;
+      for (let s = 0; s <= span + 1e-6; s += tick) el("text", { x: x(s * hz), y: H - 6, "text-anchor": "middle" }, svg).textContent = s + " s";
       el("text", { x: 2, y: T + 8 }, svg).textContent = "mm";
       d.err[0].forEach((_, a) => el("polyline", { points: d.t.map((t, i) => `${x(t).toFixed(1)},${y(d.err[i][a]).toFixed(1)}`).join(" "), fill: "none", stroke: AX[a], "stroke-width": 1.8, "stroke-linejoin": "round" }, svg));
       const cursor = el("line", { class: "cursor", x1: L, x2: L, y1: T, y2: H - B }, svg);

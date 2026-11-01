@@ -156,11 +156,12 @@ def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, finger_g
 
 
 def hero_data():
-    """Per-axis error (mm) per captured step for the teaser traces."""
+    """Per-axis error (mm) per captured step for the teaser traces (the PPO p95 placement)."""
     hero = {"fps": 10, "policy_hz": POLICY_HZ, "stride": 3}
-    for key, run_dir, t_end in (("divc", "divc_nominal_seq_s42", 47), ("ppo", "ppo_nominal_seq_s42", 65)):
-        rows = episode(run_dir, 0, t_end)
-        hero[key] = {"t_end": t_end, "frames": len(rows), "t": [r["t"] for r in rows],
+    for key in ("divc", "ppo"):
+        rows = episode(f"{key}_p95_s42", 0)
+        hero[key] = {"t_end": rows[-1]["t"], "frames": len(rows), "t": [r["t"] for r in rows],
+                     "stable": rows[-1]["label"] == "positioned",
                      "err": [[round(abs(v), 3) for v in r["err_mm"]] for r in rows]}
     (ROOT / "static/hero.json").write_text(json.dumps(hero, separators=(",", ":")))
 
@@ -169,10 +170,12 @@ def videos():
     W16 = (800, 450)
     # teaser: fixed camera az60, one frame per 3 policy steps -> 10 fps is real time
     teaser_crop = ((40, 1080), (700, 1856))
-    for key, run_dir, t_end in (("divc", "divc_nominal_seq_s42", 47), ("ppo", "ppo_nominal_seq_s42", 65)):
-        rows = episode(run_dir, 0, t_end)
-        f = [frame(run_dir, r, "fixed_az60", (720, 648), teaser_crop) for r in rows]
-        write(f"seq_{key}", f + [f[-1]] * (65 // 3 + 1 - len(f) + 12), 10)
+    # PPO episode at its p95 final error (2.5 mm, never stable), same placement replayed for DivC-PPO
+    clips = {k: [frame(f"{k}_p95_s42", r, "fixed_az60", (720, 648), teaser_crop) for r in episode(f"{k}_p95_s42", 0)]
+             for k in ("divc", "ppo")}
+    n = max(map(len, clips.values())) + 12
+    for key, f in clips.items():
+        write(f"seq_{key}", f + [f[-1]] * (n - len(f)), 10)
 
     gain = side_gain(("divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", "divc_nominal_axis_s42", "ppo_nominal_axis_s42"),
                      "world_macro_side", (432, 432), SQUARE_MACRO)
