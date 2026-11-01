@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DivC-PPO</title>
+<meta name="description" content="DivC-PPO gives each Cartesian axis its own reward stream, advantage, and clipped probability ratio in PPO. Project page with results and videos.">
+<meta property="og:title" content="DivC-PPO: Cartesian-Aligned Credit Assignment for Precision Vision-Guided End-Effector Positioning">
+<meta property="og:description" content="Per-axis credit assignment for PPO. 0.337 mm 3-D error and 100% stable success on a simulated UR10e positioning task.">
+<meta property="og:image" content="static/img/fig2.webp">
+<meta name="color-scheme" content="light dark">
+<link rel="preload" href="static/fonts/barlow-semi-condensed-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="static/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+<header class="masthead">
+  <h1>DivC-PPO<span class="sub">Cartesian-Aligned Credit Assignment for Precision Vision-Guided End-Effector Positioning</span></h1>
+  <p class="authors">Aditya Nugraha Putra<sup>1</sup> and Van-Linh Nguyen<sup>2</sup></p>
+  <p class="affil"><sup>1</sup>AIMHI, National Chung Cheng University, Taiwan<br><sup>2</sup>Department of Computer Science and Information Engineering, National Chung Cheng University, Taiwan</p>
+  <nav class="links" aria-label="Paper links">
+    <span class="btn" aria-disabled="true">Paper (to appear)</span>
+    <span class="btn" aria-disabled="true">Code (coming soon)</span>
+    <a class="btn" href="#bibtex">BibTeX</a>
+  </nav>
+</header>
+
+<div class="hero" id="hero">
+  <div class="hero-grid">
+    <div class="run divc">
+      <h3>DivC-PPO</h3>
+      <video id="v-divc" src="static/video/seq_divc.webm" poster="static/img/seq_divc_poster.webp" muted playsinline preload="auto" aria-label="DivC-PPO moves the gripper down to the target"></video>
+      <div class="readout" aria-hidden="true"><span class="x">X <b data-ax="0">–</b></span><span class="y">Y <b data-ax="1">–</b></span><span class="z">Z <b data-ax="2">–</b></span><span data-time></span></div>
+      <svg class="trace" data-run="divc" viewBox="0 0 480 150" role="img" aria-label="Per-axis error of DivC-PPO over time, log scale"></svg>
+    </div>
+    <div class="run ppo">
+      <h3>PPO</h3>
+      <video id="v-ppo" src="static/video/seq_ppo.webm" poster="static/img/seq_ppo_poster.webp" muted playsinline preload="auto" aria-label="PPO moves the gripper down to the target"></video>
+      <div class="readout" aria-hidden="true"><span class="x">X <b data-ax="0">–</b></span><span class="y">Y <b data-ax="1">–</b></span><span class="z">Z <b data-ax="2">–</b></span><span data-time></span></div>
+      <svg class="trace" data-run="ppo" viewBox="0 0 480 150" role="img" aria-label="Per-axis error of PPO over time, log scale"></svg>
+    </div>
+  </div>
+  <p class="hero-caption">Same object placement, seed 42, in Isaac Sim. The traces show the absolute error of each axis in millimeters on a log scale. The shaded band is the 1&nbsp;mm target box. DivC-PPO brings all three axes into the box by 1.0&nbsp;s and stays there. PPO overshoots in Y and Z near the target and becomes stable at 2.17&nbsp;s instead of 1.57&nbsp;s. This is one episode, not a statistic. <button class="replay" type="button" id="replay">Replay</button></p>
+</div>
+
+<section id="abstract">
+  <h2>Abstract</h2>
+  <p>Vision-guided positioning requires converting visual errors into precise Cartesian corrections. Standard PPO assigns one advantage and one probability ratio to the whole action, so the contributions of the X, Y, and Z axes can be mixed during policy optimization. This study presents DivC-PPO, a Cartesian-aligned credit assignment method for PPO that gives each axis its own reward stream, advantage, and clipped probability ratio. The actor and critic use only wrist-camera detection features and proprioception, while training rewards are computed from the simulator state. On a simulated UR10e positioning task with objects placed within &plusmn;4&nbsp;cm along X and Y, DivC-PPO reaches a 3-D error of 0.337&nbsp;mm and 100% stable success over three seeds. PPO with the same critic, reward terms, and training budget achieves 1.167&nbsp;mm and 56.64%. Scrambling the axis mapping prevents learning, showing that the gain depends on the correct correspondence. Replacing the per-axis ratios with a shared ratio raises the error to 0.647&nbsp;mm. The advantage holds under small detection noise and wider target placement but disappears under larger noise and action-scale mismatch.</p>
+</section>
+
+<section id="method">
+  <h2>Method</h2>
+  <p>Standard PPO multiplies the per-axis probability ratios into one joint ratio and pairs it with a single advantage for the whole action. DivC-PPO instead keeps the reward&ndash;action correspondence of each axis through the reward, advantage estimation, probability ratio, and clipping.</p>
+  <p>Each axis stream receives the reward terms of its own axis, and the task-wide terms are copied in full to all three streams. The critic outputs a single scalar value, which serves as the shared baseline for all three credit streams. The per-axis clipped surrogates are summed into the policy loss.</p>
+  <figure class="wide">
+    <div class="plate"><img src="static/img/fig2.webp" width="2000" height="739" alt="Diagram of DivC-PPO: parallel simulation produces X, Y, and Z reward streams; one critic value is the baseline for every stream; per-axis clipped surrogates are summed; the actor output is clipped, scaled by 1.5 cm, and converted to joint targets by damped-least-squares inverse kinematics." loading="lazy"></div>
+    <figcaption><b>Overview of DivC-PPO.</b> Rewards from the simulator state form one stream per Cartesian axis, with task-wide terms copied to all three. One critic value is the baseline for every stream, and the per-axis clipped surrogates are summed into the policy loss. The actor and critic share the 12-D observation. The actor output is clipped to [&minus;1,&nbsp;1], scaled by 1.5&nbsp;cm, and converted to joint targets by damped-least-squares inverse kinematics (DLS IK).</figcaption>
+  </figure>
+</section>
+
+<section id="task">
+  <h2>Task</h2>
+  <p>The policy receives the YOLO11n bounding-box center and depth from the wrist camera, together with proprioception. It moves the tool point near the fingertips to the target on top of the object. Training rewards are computed from the simulator state.</p>
+  <figure class="wide">
+    <div class="plate"><img src="static/img/fig1.webp" alt="UR10e with a Robotiq gripper above a cylinder in Isaac Sim, with an inset of the wrist-camera view and its YOLO detection." loading="lazy"></div>
+    <figcaption><b>Vision-guided positioning task in Isaac Sim.</b> DivC-PPO keeps each Cartesian axis responsible for its own action.</figcaption>
+  </figure>
+  <div class="pair">
+    <figure>
+      <video class="clip" src="static/video/wrist_divc.mp4" poster="static/img/wrist_divc_poster.webp" controls muted playsinline preload="none" aria-label="Wrist camera of DivC-PPO with YOLO detection overlay"></video>
+      <p class="tag divc">DivC-PPO, wrist camera</p>
+    </figure>
+    <figure>
+      <video class="clip" src="static/video/wrist_ppo.mp4" poster="static/img/wrist_ppo_poster.webp" controls muted playsinline preload="none" aria-label="Wrist camera of PPO with YOLO detection overlay"></video>
+      <p class="tag ppo">PPO, wrist camera</p>
+    </figure>
+  </div>
+  <p>The wrist camera records at 640&times;640. The overlay shows the YOLO detection used as the observation and the region masked out for the gripper. One evaluation episode per method, seed 42.</p>
+</section>
+
+<section id="results">
+  <h2>Results</h2>
+  <p>Both methods use the same critic, reward terms, and training budget. Results are averaged over three seeds with 1,024 evaluation episodes each.</p>
+  <div class="table-wrap">
+    <table>
+      <caption>Nominal positioning performance</caption>
+      <thead><tr><th>Metric</th><th>PPO</th><th>DivC-PPO</th></tr></thead>
+      <tbody>
+        <tr><td>3-D error (mm)</td><td>1.167 &plusmn; 0.103</td><td class="best">0.337 &plusmn; 0.059</td></tr>
+        <tr><td>Stable success (%)</td><td>56.64 &plusmn; 5.53</td><td class="best">100.00 &plusmn; 0.00</td></tr>
+        <tr><td>Near-target failure (%)</td><td>41.15 &plusmn; 5.22</td><td class="best">0.00 &plusmn; 0.00</td></tr>
+        <tr><td>Time to stable success (s)</td><td>2.14 &plusmn; 0.06</td><td class="best">1.55 &plusmn; 0.03</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Every DivC-PPO episode ends with an error below 1&nbsp;mm. Most PPO failures occur close to the target: 97.8% of PPO episodes come within 2&nbsp;mm, so PPO fails in the last few millimeters rather than on the approach.</p>
+  <figure>
+    <div class="plate"><img src="static/img/fig3.webp" alt="Left: cumulative distribution of 3-D error for PPO and DivC-PPO with a dashed line at 1 mm. Right: final X–Y error of each episode with the 1 mm target box." loading="lazy"></div>
+    <figcaption><b>Nominal evaluation over three seeds.</b> (a) Cumulative distribution of the 3-D error. Thick lines pool the seeds, thin lines show each seed, and the dashed line marks 1&nbsp;mm. (b) Final X&ndash;Y error of each episode. The dashed square is the 1&nbsp;mm target box and crosses mark the means.</figcaption>
+  </figure>
+  <figure>
+    <div class="plate"><img src="static/img/fig4.webp" alt="Training curves of 3-D error on a log scale and of episode return, averaged over three seeds." loading="lazy"></div>
+    <figcaption><b>Training curves averaged over three seeds.</b> (a) Final 3-D error of each training episode, on a log scale. (b) Episode return of the environment reward. DivC-PPO falls under 10&nbsp;mm after 0.36 million environment steps, about half of the 0.69 million that PPO needs.</figcaption>
+  </figure>
+
+  <h3 class="sub">Mechanism controls</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Variant</th><th>3-D error (mm)</th><th>Stable success (%)</th></tr></thead>
+      <tbody>
+        <tr><td>PPO</td><td>1.167 &plusmn; 0.103</td><td>56.64 &plusmn; 5.53</td></tr>
+        <tr><td>DivC-PPO</td><td class="best">0.337 &plusmn; 0.059</td><td class="best">100.00 &plusmn; 0.00</td></tr>
+        <tr><td>Shared-ratio control</td><td>0.647 &plusmn; 0.122</td><td>93.55 &plusmn; 5.75</td></tr>
+        <tr><td>Scrambled mapping</td><td>202.7 &plusmn; 184.3</td><td>0.00 &plusmn; 0.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Scrambling the axis mapping fails completely, so splitting credit into three streams does not help when each stream is optimized with the reward of another axis. The shared-ratio control is better than PPO, but its error is almost twice as large as with DivC-PPO. Per-axis rewards and advantages provide most of the gain over PPO, and per-axis probability ratios further reduce the error in this setting.</p>
+
+  <h3 class="sub">Robustness</h3>
+  <p>The advantage holds under small bounding-box noise and when the object is placed outside the training range. It disappears from 0.64&nbsp;px of detection noise and from an action scale of 2.5&nbsp;cm.</p>
+  <figure>
+    <div class="plate"><img src="static/img/fig5.webp" alt="Stable success of PPO and DivC-PPO against bounding-box noise, placement radius, and action scale." loading="lazy"></div>
+    <figcaption><b>Stable success under deployment perturbations.</b> (a) Bounding-box noise, (b) placement radius, and (c) action scale. Markers show the mean over three seeds and bars the range over seeds.</figcaption>
+  </figure>
+  <details>
+    <summary>Full robustness table</summary>
+    <div class="table-wrap">
+      <table>
+        <caption>Robustness to deployment perturbations, mean over three seeds</caption>
+        <thead>
+          <tr class="colgroup"><th></th><th colspan="2">PPO</th><th colspan="2">DivC-PPO</th></tr>
+          <tr><th>Condition</th><th>3-D error (mm)</th><th>Success (%)</th><th>3-D error (mm)</th><th>Success (%)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="group" colspan="5">Bounding-box noise (px)</td></tr>
+          <tr><td>0.064</td><td>1.021</td><td>63.7</td><td class="best">0.529</td><td class="best">97.3</td></tr>
+          <tr><td>0.16</td><td>1.018</td><td>60.3</td><td class="best">0.552</td><td class="best">93.3</td></tr>
+          <tr><td>0.32</td><td>1.034</td><td>56.0</td><td class="best">0.622</td><td class="best">85.3</td></tr>
+          <tr><td>0.64</td><td>1.094</td><td class="best">37.3</td><td class="best">0.840</td><td>31.0</td></tr>
+          <tr><td>0.96</td><td>1.181</td><td class="best">18.3</td><td class="best">1.114</td><td>0.0</td></tr>
+          <tr><td>1.6</td><td class="best">1.410</td><td>0.0</td><td>1.656</td><td>0.0</td></tr>
+          <tr><td class="group" colspan="5">Placement radius (cm)</td></tr>
+          <tr><td>6</td><td>1.866</td><td>20.3</td><td class="best">0.596</td><td class="best">95.3</td></tr>
+          <tr><td>8</td><td>2.510</td><td>10.7</td><td class="best">0.682</td><td class="best">89.0</td></tr>
+          <tr><td>10</td><td>3.396</td><td>5.7</td><td class="best">0.825</td><td class="best">73.3</td></tr>
+          <tr><td>12</td><td>7.075</td><td>3.7</td><td class="best">0.992</td><td class="best">62.0</td></tr>
+          <tr><td>14</td><td>12.717</td><td>3.0</td><td class="best">1.195</td><td class="best">46.0</td></tr>
+          <tr><td class="group" colspan="5">Action scale (cm)</td></tr>
+          <tr><td>2.0</td><td>1.021</td><td>64.3</td><td class="best">0.517</td><td class="best">98.0</td></tr>
+          <tr><td>2.5</td><td class="best">1.040</td><td class="best">62.7</td><td>1.528</td><td>61.3</td></tr>
+          <tr><td>3.0</td><td class="best">2.248</td><td class="best">46.0</td><td>9.521</td><td>0.0</td></tr>
+          <tr><td>3.5</td><td class="best">6.432</td><td class="best">6.7</td><td>15.121</td><td>0.0</td></tr>
+          <tr><td>4.0</td><td class="best">11.973</td><td class="best">0.3</td><td>18.419</td><td>0.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+<section id="limitations">
+  <h2>Limitations</h2>
+  <p>All results come from one positioning task with one robot in simulation, and PPO is the only baseline. Because the training reward is computed from the simulator state, transfer to a physical robot still has to be shown. DivC-PPO relies on reward terms that can be assigned to Cartesian axes through the task frame. Its main failures appear with detection noise from 0.64&nbsp;px and action scales from 2.5&nbsp;cm. Randomizing the detection noise and the action scale during training is a next step toward removing these failures.</p>
+</section>
+
+<section id="bibtex">
+  <h2>BibTeX</h2>
+  <div class="bib">
+<pre id="bib-text">@inproceedings{putra2026divcppo,
+  title  = {DivC-PPO: Cartesian-Aligned Credit Assignment for
+            Precision Vision-Guided End-Effector Positioning},
+  author = {Putra, Aditya Nugraha and Nguyen, Van-Linh},
+  year   = {2026},
+  note   = {To appear}
+}</pre>
+    <button class="btn copy" type="button" id="copy">Copy</button>
+  </div>
+</section>
+
+<footer>
+  Simulated in Isaac Sim 5.1 with Isaac Lab. Videos and renders come from the evaluated policies of the paper runs, seed 42.
+</footer>
+
+</div>
+
+<script>
+(() => {
+  // copy BibTeX
+  const copy = document.getElementById("copy");
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(document.getElementById("bib-text").textContent); copy.textContent = "Copied"; }
+    catch { copy.textContent = "Select and copy"; }
+    setTimeout(() => (copy.textContent = "Copy"), 1800);
+  });
+
+  // hero: draw per-axis error traces and keep a cursor on the video time
+  const W = 480, H = 150, L = 34, R = 8, T = 6, B = 22, LO = 0.01, HI = 500;
+  const AX = ["var(--x)", "var(--y)", "var(--z)"];
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  fetch("static/hero.json").then(r => r.json()).then(h => {
+    const tMax = h.ppo.t_end, stepsPerSec = h.policy_hz;
+    const x = t => L + (W - L - R) * t / tMax;
+    const y = v => T + (H - T - B) * (Math.log10(HI) - Math.log10(Math.max(v, LO))) / (Math.log10(HI) - Math.log10(LO));
+    const runs = {};
+    for (const key of ["divc", "ppo"]) {
+      const d = h[key], svg = document.querySelector(`svg[data-run="${key}"]`);
+      el("rect", { class: "band", x: L, y: y(1), width: W - L - R, height: y(LO) - y(1) }, svg);
+      for (const v of [0.01, 0.1, 1, 10, 100]) {
+        el("line", { class: v === 1 ? "bandline" : "grid", x1: L, x2: W - R, y1: y(v), y2: y(v) }, svg);
+        el("text", { x: L - 5, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v >= 1 ? v : v.toString().replace(/^0/, "");
+      }
+      for (let s = 0; s <= 2; s += 0.5) {
+        el("text", { x: x(s * stepsPerSec), y: H - 6, "text-anchor": "middle" }, svg).textContent = s + " s";
+      }
+      el("text", { x: 2, y: T + 8 }, svg).textContent = "mm";
+      d.err[0].forEach((_, a) => {
+        el("polyline", { points: d.t.map((t, i) => `${x(t).toFixed(1)},${y(d.err[i][a]).toFixed(1)}`).join(" "), fill: "none", stroke: AX[a], "stroke-width": 1.8, "stroke-linejoin": "round" }, svg);
+      });
+      const cursor = el("line", { class: "cursor", x1: L, x2: L, y1: T, y2: H - B }, svg);
+      const card = svg.closest(".run");
+      runs[key] = { d, cursor, video: card.querySelector("video"), vals: card.querySelectorAll("[data-ax]"), time: card.querySelector("[data-time]") };
+    }
+
+    const show = sec => {
+      const step = Math.min(sec * stepsPerSec, tMax);
+      for (const r of Object.values(runs)) {
+        const last = r.d.t.length - 1;
+        let i = r.d.t.findIndex(t => t > step) - 1;
+        if (i < 0) i = last;
+        r.cursor.setAttribute("x1", x(Math.min(step, r.d.t[last]))); r.cursor.setAttribute("x2", x(Math.min(step, r.d.t[last])));
+        r.vals.forEach((b, a) => (b.textContent = r.d.err[i][a].toFixed(r.d.err[i][a] < 10 ? 2 : 0)));
+        r.time.textContent = (Math.min(step, r.d.t[last]) / stepsPerSec).toFixed(2) + " s";
+      }
+    };
+
+    const lead = runs.divc.video, follow = runs.ppo.video;
+    const tick = () => {
+      if (Math.abs(follow.currentTime - lead.currentTime) > 0.08) follow.currentTime = lead.currentTime;
+      show(lead.currentTime);
+      if (!lead.paused) requestAnimationFrame(tick);
+    };
+    const play = () => {
+      lead.currentTime = follow.currentTime = 0;
+      Promise.all([lead.play(), follow.play()]).then(() => requestAnimationFrame(tick)).catch(() => show(tMax));
+    };
+    lead.addEventListener("ended", () => setTimeout(play, 1500));
+    document.getElementById("replay").addEventListener("click", play);
+
+    if (reduce) { show(tMax); lead.currentTime = follow.currentTime = 3.3; }
+    else new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { play(); o.disconnect(); } }).observe(document.getElementById("hero"));
+  });
+})();
+</script>
+</body>
+</html>
