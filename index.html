@@ -16,7 +16,7 @@
 
 <section class="hero">
   <div class="hero-body">
-    <div class="container is-max-desktop has-text-centered">
+    <div class="container is-max-widescreen has-text-centered">
       <h1 class="title is-1 publication-title">DivC-PPO: Cartesian-Aligned Credit Assignment for Precision Vision&#8209;Guided End&#8209;Effector Positioning</h1>
       <div class="is-size-5 publication-authors">
         <span class="author-block">Aditya Nugraha Putra<sup>1</sup>,</span>
@@ -36,7 +36,7 @@
 </section>
 
 <section class="hero teaser" id="teaser">
-  <div class="container is-max-desktop">
+  <div class="container is-max-widescreen">
     <div class="hero-body">
       <div class="columns">
         <div class="column">
@@ -62,9 +62,9 @@
 </section>
 
 <section class="section">
-  <div class="container is-max-desktop">
+  <div class="container is-max-widescreen">
     <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
+      <div class="column">
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>Vision-guided positioning requires converting visual errors into precise Cartesian corrections. Standard PPO assigns one advantage and one probability ratio to the whole action, so the contributions of the X, Y, and Z axes can be mixed during policy optimization. This study presents DivC-PPO, a Cartesian-aligned credit assignment method for PPO that gives each axis its own reward stream, advantage, and clipped probability ratio. The actor and critic use only wrist-camera detection features and proprioception, while training rewards are computed from the simulator state.</p>
@@ -125,8 +125,8 @@
     </div>
 
     <h3 class="title is-4 has-text-centered">PPO near-target failure</h3>
-    <div class="columns is-centered is-vcentered">
-      <div class="column is-7">
+    <div class="columns is-vcentered">
+      <div class="column is-8">
         <div class="pair-labels"><span>Close-up</span><span>Wrist camera</span></div>
         <video class="result" src="static/video/ppo_fail.webm" poster="static/img/ppo_fail_poster.webp" muted loop playsinline preload="none" aria-label="PPO hovers next to the target without becoming stable"></video>
       </div>
@@ -138,7 +138,7 @@
     <h3 class="title is-4 has-text-centered">Object placed 14&nbsp;cm away</h3>
     <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode, 7&nbsp;s at 2&times; speed. At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
     <div class="columns is-centered">
-      <div class="column is-9">
+      <div class="column">
         <div class="tabs is-toggle is-centered is-small ep-tabs">
           <ul>
             <li class="is-active"><a data-ep="0" data-cap="Final error: DivC-PPO 1.45&nbsp;mm, PPO 5.49&nbsp;mm.">Episode 1</a></li>
@@ -155,8 +155,8 @@
 </section>
 
 <section class="section" id="BibTeX">
-  <div class="container is-max-desktop content">
-    <h2 class="title">BibTeX</h2>
+  <div class="container is-max-widescreen content">
+    <h2 class="title is-3 has-text-centered">BibTeX</h2>
     <div class="bib">
 <pre><code id="bib-text">@inproceedings{putra2026divcppo,
   title  = {DivC-PPO: Cartesian-Aligned Credit Assignment for
@@ -171,7 +171,7 @@
 </section>
 
 <footer class="footer">
-  <div class="container is-max-desktop has-text-centered">
+  <div class="container is-max-widescreen has-text-centered">
     <p>Contact: <a href="mailto:g14461007@ccu.edu.tw">g14461007@ccu.edu.tw</a>, <a href="mailto:nvlinh@cs.ccu.edu.tw">nvlinh@cs.ccu.edu.tw</a></p>
     <p class="is-size-7">Page layout follows the <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a> project page template.</p>
   </div>

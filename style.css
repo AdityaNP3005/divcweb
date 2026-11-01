@@ -18,7 +18,7 @@ body { font-family: "Noto Sans", sans-serif; color: #363636; }
 .button[disabled] { opacity: .45; }
 
 /* Teaser */
-.teaser .hero-body { padding-top: 0; padding-bottom: 2.5rem; }
+.teaser .hero-body { padding: 0 0 2.5rem; }  /* already inside the container */
 .teaser video { width: 100%; height: auto; display: block; border-radius: 10px; background: #f2f2f2; }
 .run-label { text-align: center; font-size: 1.25rem; font-weight: 600; margin-bottom: .5rem; }
 .readout { display: flex; justify-content: center; gap: 1.1rem; margin: .6rem 0 .1rem; font-size: .95rem; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -30,15 +30,20 @@ body { font-family: "Noto Sans", sans-serif; color: #363636; }
 .trace .band { fill: rgba(72, 199, 142, .10); }
 .trace .bandline { stroke: #48c78e; stroke-dasharray: 3 3; }
 .trace .cursor { stroke: #363636; }
-.teaser .subtitle { max-width: 900px; margin: 1.5rem auto .5rem; line-height: 1.5; }
+.teaser .subtitle { margin: 1.5rem 0 .5rem; line-height: 1.5; }
 .note { color: var(--muted); }
+
+/* One content width for every section so all left and right edges line up */
+.container.is-max-widescreen { max-width: 1100px !important; }
+.section, .hero > .hero-body { padding-left: 1.5rem; padding-right: 1.5rem; }
+.teaser { padding: 0 1.5rem; }
 
 /* Body */
 .section { padding: 3rem 1.5rem; }
 .figure { display: block; width: 100%; height: auto; }
-.caption { max-width: 900px; margin: .75rem auto 0; font-size: .95rem; color: var(--muted); text-align: center; }
+.caption { margin: .75rem 0 0; font-size: .95rem; color: var(--muted); text-align: center; }
 .caption.left { text-align: left; margin-top: .75rem; }
-.lead { max-width: 900px; margin: 0 auto 1.5rem; color: #4a4a4a; }
+.lead { margin: 0 0 1.5rem; color: #4a4a4a; }
 h3.title.is-4 { margin-top: 3.5rem; }
 
 .result-row { margin: 1rem 0 0; }
