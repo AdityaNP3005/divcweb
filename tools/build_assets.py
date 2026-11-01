@@ -138,7 +138,7 @@ def hero_data():
     (ROOT / "static/hero.json").write_text(json.dumps(hero, separators=(",", ":")))
 
 
-# one placement per condition, replayed for both policies (DualHeadPPO/.cache/run_page_v2_capture.sh)
+# one placement per condition, replayed for both policies (DualHeadPPO/tools/paper_capture/run_page_v2_capture.sh)
 CONDITIONS = {"p85": 10, "ood14": 20, "noise": 20, "scale": 20}  # fps: 10 is real time, 20 is 2x
 
 
