@@ -14,20 +14,19 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="page">
 
-<header class="masthead">
-  <h1>DivC-PPO<span class="sub">Cartesian-Aligned Credit Assignment for Precision Vision-Guided End-Effector Positioning</span></h1>
+<header class="masthead"><div class="container">
+  <h1>DivC-PPO: Cartesian-Aligned Credit Assignment for Precision Vision&#8209;Guided End&#8209;Effector Positioning</h1>
   <p class="authors">Aditya Nugraha Putra<sup>1</sup> and Van-Linh Nguyen<sup>2</sup></p>
   <p class="affil"><sup>1</sup>AIMHI, National Chung Cheng University, Taiwan<br><sup>2</sup>Department of Computer Science and Information Engineering, National Chung Cheng University, Taiwan</p>
   <nav class="links" aria-label="Paper links">
-    <span class="btn" aria-disabled="true">Paper (to appear)</span>
-    <span class="btn" aria-disabled="true">Code (coming soon)</span>
-    <a class="btn" href="#bibtex">BibTeX</a>
+    <span class="btn" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6zM13 3.5V9h5.5z"/></svg>Paper (to appear)</span>
+    <span class="btn" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>Code (coming soon)</span>
+    <a class="btn" href="#bibtex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3zm3 14a1 1 0 0 0 0 2h11v-2z"/></svg>BibTeX</a>
   </nav>
-</header>
+</div></header>
 
-<div class="hero" id="hero">
+<div class="teaser" id="hero"><div class="container">
   <div class="hero-grid">
     <div class="run divc">
       <h3>DivC-PPO</h3>
@@ -42,29 +41,30 @@
       <svg class="trace" data-run="ppo" viewBox="0 0 480 150" role="img" aria-label="Per-axis error of PPO over time, log scale"></svg>
     </div>
   </div>
-  <p class="hero-caption">Same object placement, seed 42, in Isaac Sim. The traces show the absolute error of each axis in millimeters on a log scale. The shaded band is the 1&nbsp;mm target box. DivC-PPO brings all three axes into the box by 1.0&nbsp;s and stays there. PPO overshoots in Y and Z near the target and becomes stable at 2.17&nbsp;s instead of 1.57&nbsp;s. This is one episode, not a statistic. <button class="replay" type="button" id="replay">Replay</button></p>
-</div>
+  <p class="subtitle">DivC-PPO brings X, Y, and Z into the 1&nbsp;mm box by 1.0&nbsp;s and stays there. PPO overshoots in Y and Z near the target and becomes stable at 2.17&nbsp;s instead of 1.57&nbsp;s.
+    <span class="note">Same object placement, seed 42, in Isaac Sim. Traces show the absolute error of each axis in millimeters on a log scale, and the shaded band is the 1&nbsp;mm target box. One episode, not a statistic. <button class="replay" type="button" id="replay">Replay</button></span></p>
+</div></div>
 
-<section id="abstract">
+<section id="abstract"><div class="container">
   <h2>Abstract</h2>
   <p>Vision-guided positioning requires converting visual errors into precise Cartesian corrections. Standard PPO assigns one advantage and one probability ratio to the whole action, so the contributions of the X, Y, and Z axes can be mixed during policy optimization. This study presents DivC-PPO, a Cartesian-aligned credit assignment method for PPO that gives each axis its own reward stream, advantage, and clipped probability ratio. The actor and critic use only wrist-camera detection features and proprioception, while training rewards are computed from the simulator state. On a simulated UR10e positioning task with objects placed within &plusmn;4&nbsp;cm along X and Y, DivC-PPO reaches a 3-D error of 0.337&nbsp;mm and 100% stable success over three seeds. PPO with the same critic, reward terms, and training budget achieves 1.167&nbsp;mm and 56.64%. Scrambling the axis mapping prevents learning, showing that the gain depends on the correct correspondence. Replacing the per-axis ratios with a shared ratio raises the error to 0.647&nbsp;mm. The advantage holds under small detection noise and wider target placement but disappears under larger noise and action-scale mismatch.</p>
-</section>
+</div></section>
 
-<section id="method">
+<section id="method"><div class="container">
   <h2>Method</h2>
   <p>Standard PPO multiplies the per-axis probability ratios into one joint ratio and pairs it with a single advantage for the whole action. DivC-PPO instead keeps the reward&ndash;action correspondence of each axis through the reward, advantage estimation, probability ratio, and clipping.</p>
   <p>Each axis stream receives the reward terms of its own axis, and the task-wide terms are copied in full to all three streams. The critic outputs a single scalar value, which serves as the shared baseline for all three credit streams. The per-axis clipped surrogates are summed into the policy loss.</p>
-  <figure class="wide">
-    <div class="plate"><img src="static/img/fig2.webp" width="2000" height="739" alt="Diagram of DivC-PPO: parallel simulation produces X, Y, and Z reward streams; one critic value is the baseline for every stream; per-axis clipped surrogates are summed; the actor output is clipped, scaled by 1.5 cm, and converted to joint targets by damped-least-squares inverse kinematics." loading="lazy"></div>
+  <figure>
+    <img src="static/img/fig2.webp" width="2000" height="739" alt="Diagram of DivC-PPO: parallel simulation produces X, Y, and Z reward streams; one critic value is the baseline for every stream; per-axis clipped surrogates are summed; the actor output is clipped, scaled by 1.5 cm, and converted to joint targets by damped-least-squares inverse kinematics." loading="lazy">
     <figcaption><b>Overview of DivC-PPO.</b> Rewards from the simulator state form one stream per Cartesian axis, with task-wide terms copied to all three. One critic value is the baseline for every stream, and the per-axis clipped surrogates are summed into the policy loss. The actor and critic share the 12-D observation. The actor output is clipped to [&minus;1,&nbsp;1], scaled by 1.5&nbsp;cm, and converted to joint targets by damped-least-squares inverse kinematics (DLS IK).</figcaption>
   </figure>
-</section>
+</div></section>
 
-<section id="task">
+<section id="task"><div class="container">
   <h2>Task</h2>
   <p>The policy receives the YOLO11n bounding-box center and depth from the wrist camera, together with proprioception. It moves the tool point near the fingertips to the target on top of the object. Training rewards are computed from the simulator state.</p>
-  <figure class="wide">
-    <div class="plate"><img src="static/img/fig1.webp" alt="UR10e with a Robotiq gripper above a cylinder in Isaac Sim, with an inset of the wrist-camera view and its YOLO detection." loading="lazy"></div>
+  <figure>
+    <img src="static/img/fig1.webp" alt="UR10e with a Robotiq gripper above a cylinder in Isaac Sim, with an inset of the wrist-camera view and its YOLO detection." loading="lazy">
     <figcaption><b>Vision-guided positioning task in Isaac Sim.</b> DivC-PPO keeps each Cartesian axis responsible for its own action.</figcaption>
   </figure>
   <div class="pair">
@@ -78,9 +78,9 @@
     </figure>
   </div>
   <p>The wrist camera records at 640&times;640. The overlay shows the YOLO detection used as the observation and the region masked out for the gripper. One evaluation episode per method, seed 42.</p>
-</section>
+</div></section>
 
-<section id="results">
+<section id="results"><div class="container">
   <h2>Results</h2>
   <p>Both methods use the same critic, reward terms, and training budget. Results are averaged over three seeds with 1,024 evaluation episodes each.</p>
   <div class="table-wrap">
@@ -96,12 +96,12 @@
     </table>
   </div>
   <p>Every DivC-PPO episode ends with an error below 1&nbsp;mm. Most PPO failures occur close to the target: 97.8% of PPO episodes come within 2&nbsp;mm, so PPO fails in the last few millimeters rather than on the approach.</p>
-  <figure>
-    <div class="plate"><img src="static/img/fig3.webp" alt="Left: cumulative distribution of 3-D error for PPO and DivC-PPO with a dashed line at 1 mm. Right: final X–Y error of each episode with the 1 mm target box." loading="lazy"></div>
+  <figure class="col">
+    <img src="static/img/fig3.webp" alt="Left: cumulative distribution of 3-D error for PPO and DivC-PPO with a dashed line at 1 mm. Right: final X–Y error of each episode with the 1 mm target box." loading="lazy">
     <figcaption><b>Nominal evaluation over three seeds.</b> (a) Cumulative distribution of the 3-D error. Thick lines pool the seeds, thin lines show each seed, and the dashed line marks 1&nbsp;mm. (b) Final X&ndash;Y error of each episode. The dashed square is the 1&nbsp;mm target box and crosses mark the means.</figcaption>
   </figure>
-  <figure>
-    <div class="plate"><img src="static/img/fig4.webp" alt="Training curves of 3-D error on a log scale and of episode return, averaged over three seeds." loading="lazy"></div>
+  <figure class="col">
+    <img src="static/img/fig4.webp" alt="Training curves of 3-D error on a log scale and of episode return, averaged over three seeds." loading="lazy">
     <figcaption><b>Training curves averaged over three seeds.</b> (a) Final 3-D error of each training episode, on a log scale. (b) Episode return of the environment reward. DivC-PPO falls under 10&nbsp;mm after 0.36 million environment steps, about half of the 0.69 million that PPO needs.</figcaption>
   </figure>
 
@@ -121,8 +121,8 @@
 
   <h3 class="sub">Robustness</h3>
   <p>The advantage holds under small bounding-box noise and when the object is placed outside the training range. It disappears from 0.64&nbsp;px of detection noise and from an action scale of 2.5&nbsp;cm.</p>
-  <figure>
-    <div class="plate"><img src="static/img/fig5.webp" alt="Stable success of PPO and DivC-PPO against bounding-box noise, placement radius, and action scale." loading="lazy"></div>
+  <figure class="col">
+    <img src="static/img/fig5.webp" alt="Stable success of PPO and DivC-PPO against bounding-box noise, placement radius, and action scale." loading="lazy">
     <figcaption><b>Stable success under deployment perturbations.</b> (a) Bounding-box noise, (b) placement radius, and (c) action scale. Markers show the mean over three seeds and bars the range over seeds.</figcaption>
   </figure>
   <details>
@@ -159,14 +159,14 @@
     </div>
   </details>
 
-</section>
+</div></section>
 
-<section id="limitations">
+<section id="limitations"><div class="container">
   <h2>Limitations</h2>
   <p>All results come from one positioning task with one robot in simulation, and PPO is the only baseline. Because the training reward is computed from the simulator state, transfer to a physical robot still has to be shown. DivC-PPO relies on reward terms that can be assigned to Cartesian axes through the task frame. Its main failures appear with detection noise from 0.64&nbsp;px and action scales from 2.5&nbsp;cm. Randomizing the detection noise and the action scale during training is a next step toward removing these failures.</p>
-</section>
+</div></section>
 
-<section id="bibtex">
+<section id="bibtex"><div class="container">
   <h2>BibTeX</h2>
   <div class="bib">
 <pre id="bib-text">@inproceedings{putra2026divcppo,
@@ -178,13 +178,11 @@
 }</pre>
     <button class="btn copy" type="button" id="copy">Copy</button>
   </div>
-</section>
+</div></section>
 
-<footer>
+<footer><div class="container">
   Simulated in Isaac Sim 5.1 with Isaac Lab. Videos and renders come from the evaluated policies of the paper runs, seed 42.
-</footer>
-
-</div>
+</div></footer>
 
 <script>
 (() => {
