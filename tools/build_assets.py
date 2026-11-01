@@ -119,9 +119,10 @@ def videos():
     # 14 cm placement radius, same placement per episode, one frame per 3 steps -> 20 fps is 2x speed.
     # Front and side show the reach; the macro cameras sit 22 cm from the object top.
     for ep in (0, 1, 2):
-        for view, size in (("overview_front", (640, 360)), ("overview_side", (640, 360)),
-                           ("closeup_side", (400, 400)), ("macro_az90", (400, 400))):
-            pair(f"ood_ep{ep}_{view}", "divc_ood14_vid_s42", "ppo_ood14_vid_s42", view, size, 20, eps=(ep, ep),
+        # front and side cameras sit on the world axes (separate capture), close-ups follow the gripper
+        for view, size, src in (("world_front", (640, 360), "ood14_world"), ("world_side", (640, 360), "ood14_world"),
+                                ("closeup_side", (400, 400), "ood14_vid"), ("macro_az90", (400, 400), "ood14_vid")):
+            pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep),
                  crop=SQUARE_MACRO if view.startswith("macro") else None)
 
 if __name__ == "__main__":
