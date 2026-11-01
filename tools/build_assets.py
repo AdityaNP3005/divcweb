@@ -79,7 +79,19 @@ def pair(name, left, right, view, size, fps, hold_s=1.2, crop=None, eps=(0, 0), 
     write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
 
 
-def macro_frame(run_dir, row, view, size, axis, crop):
+def finger_center(img):
+    """Horizontal center of the near finger in the side macro (dark bar just above its tip)."""
+    dark = img.mean(2) < 80
+    rows = np.where(dark.sum(1) > 0.015 * img.shape[1])[0]
+    if not rows.size or rows.max() < 0.2 * img.shape[0]:
+        return None
+    tip = rows.max()
+    band = dark[max(tip - int(0.11 * img.shape[0]), 0):tip - int(0.01 * img.shape[0])]
+    cols = np.where(band.sum(0) > 0.5 * band.shape[0])[0]
+    return (cols.min() + cols.max()) / 2 if cols.size else None
+
+
+def macro_frame(run_dir, row, view, size, axis, crop, finger_gain=None):
     """Axis-aligned macro of the object top. Dashed line: object axis (always at the image center,
     the camera looks at it). Solid line: gripper axis, placed from the logged error (ee - target).
     Both cameras have image-right = minus the world axis they show, hence the minus sign.
@@ -94,13 +106,19 @@ def macro_frame(run_dir, row, view, size, axis, crop):
         cv2.line(img, (cx, y), (cx, min(y + 6, h - 1)), (60, 60, 60), 1, cv2.LINE_AA)
     e = row["err_mm"][axis]
     color = ((16, 54, 255), (0, 153, 77))[axis]  # BGR of the Fig. 2 X / Y colours
-    if ppm and abs(e) < 40:
+    gx = None
+    if finger_gain:  # side: the visible finger is closer to the camera than the object axis
+        fc = finger_center(img)
+        gx = None if fc is None else int(round(fc))
+    elif ppm and abs(e) < 40:  # front: both fingers lie in the object plane
         gx = int(round(cx - e * ppm))
+    if gx is not None:
         cv2.line(img, (gx, 0), (gx, h - 1), color, 2, cv2.LINE_AA)
     if ppm:
+        bar = 10 * ppm * (finger_gain or 1.0)
         x0, y0 = 16, h - 16
-        cv2.rectangle(img, (x0 - 6, y0 - 26), (x0 + int(10 * ppm) + 8, y0 + 8), (255, 255, 255), -1)
-        cv2.line(img, (x0, y0), (x0 + int(round(10 * ppm)), y0), (30, 30, 30), 3)
+        cv2.rectangle(img, (x0 - 6, y0 - 26), (x0 + int(bar) + 8, y0 + 8), (255, 255, 255), -1)
+        cv2.line(img, (x0, y0), (x0 + int(round(bar)), y0), (30, 30, 30), 3)
         cv2.putText(img, "10 mm", (x0, y0 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 30, 30), 1, cv2.LINE_AA)
     label = f"{'XY'[axis]} error {e:+.2f} mm" if abs(e) < 100 else f"{'XY'[axis]} error {e / 10:+.1f} cm"
     cv2.putText(img, label, (14, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 5, cv2.LINE_AA)
@@ -108,9 +126,30 @@ def macro_frame(run_dir, row, view, size, axis, crop):
     return img
 
 
-def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, hold_s=1.2):
-    a = [macro_frame(left, r, view, size, axis, crop) for r in episode(left, ep)]
-    b = [macro_frame(right, r, view, size, axis, crop) for r in episode(right, ep)]
+def side_gain(runs, view, size, crop):
+    """Perspective gain of the near finger over the object plane, fitted on every frame where the
+    finger is detected and the Y error exceeds 1 mm (both runs and all episodes share the camera)."""
+    ratios = []
+    for run_dir in runs:
+        for r in json.loads((CAP / run_dir / "capture_log.json").read_text()):
+            if r["t"] > 209 or not 1 < abs(r["err_mm"][1]) < 20:
+                continue
+            img = frame(run_dir, r, view, size, crop)
+            fc = finger_center(img)
+            orange = (img[..., 2] > 180) & (img[..., 1] > 70) & (img[..., 1] < 160) & (img[..., 0] < 80)
+            cols = np.where(orange[int(img.shape[0] * 0.92)])[0]
+            if fc is None or cols.size < 6:
+                continue
+            ppm = (cols.max() - cols.min() + 1) / 15.0
+            ratios.append(-(fc - img.shape[1] / 2) / (r["err_mm"][1] * ppm))
+    gain = float(np.median(ratios))
+    print(f"side finger gain {gain:.2f} from {len(ratios)} frames (IQR {np.percentile(ratios, 25):.2f}-{np.percentile(ratios, 75):.2f})")
+    return gain
+
+
+def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, finger_gain=None, hold_s=1.2):
+    a = [macro_frame(left, r, view, size, axis, crop, finger_gain) for r in episode(left, ep)]
+    b = [macro_frame(right, r, view, size, axis, crop, finger_gain) for r in episode(right, ep)]
     n = max(len(a), len(b)) + int(hold_s * fps)
     gap = np.full((size[1], GAP, 3), 255, np.uint8)
     write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
@@ -155,6 +194,7 @@ def videos():
 
     # 14 cm placement radius, same placement per episode, one frame per 3 steps -> 20 fps is 2x speed.
     # Front and side show the reach; the macro cameras sit 22 cm from the object top.
+    gain = side_gain(("divc_ood14_macro2_s42", "ppo_ood14_macro2_s42"), "world_macro_side", (432, 432), SQUARE_MACRO)
     for ep in (0, 1, 2):
         # front and side cameras sit on the world axes (separate capture), close-ups follow the gripper
         for view, size, src in (("world_front", (640, 360), "ood14_world"), ("world_side", (640, 360), "ood14_world"),
@@ -162,8 +202,9 @@ def videos():
             pair(f"ood_ep{ep}_{view}", f"divc_{src}_s42", f"ppo_{src}_s42", view, size, 20, eps=(ep, ep))
         # front macro looks along -Y and shows the X error; side macro looks along +X and shows Y
         # full frame for the front macro: the open fingers span most of its width
-        for view, axis, size, crop in (("world_macro_front", 0, (768, 432), None), ("world_macro_side", 1, (432, 432), SQUARE_MACRO)):
-            macro_pair(f"ood_ep{ep}_{view}", "divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", view, size, 20, axis, ep, crop)
+        for view, axis, size, crop, g in (("world_macro_front", 0, (768, 432), None, None),
+                                          ("world_macro_side", 1, (432, 432), SQUARE_MACRO, gain)):
+            macro_pair(f"ood_ep{ep}_{view}", "divc_ood14_macro2_s42", "ppo_ood14_macro2_s42", view, size, 20, axis, ep, crop, g)
 
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)
