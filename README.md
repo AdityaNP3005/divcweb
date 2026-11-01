@@ -64,7 +64,6 @@ The site is deployed on Vercel from this repository with these settings:
 ## After publication
 
 - Paper: replace the disabled `Paper (to appear)` button in `index.html` with a link to the paper.
-- Code: replace the disabled `Code (coming soon)` button with a link once the code is public.
 - BibTeX: add the venue, pages and DOI.
 
 ## Acknowledgment
