@@ -128,10 +128,10 @@ def macro_pair(name, left, right, view, size, fps, axis, ep, crop=None, near_fin
 
 
 def hero_data():
-    """Per-axis error (mm) per captured step for the teaser traces (the PPO p95 placement)."""
+    """Per-axis error (mm) per captured step for the teaser traces (the PPO p85 placement)."""
     hero = {"fps": 10, "policy_hz": POLICY_HZ, "stride": 3}
     for key in ("divc", "ppo"):
-        rows = episode(f"{key}_p95_v2_s42", 0)
+        rows = episode(f"{key}_p85_v2_s42", 0)
         hero[key] = {"t_end": rows[-1]["t"], "frames": len(rows), "t": [r["t"] for r in rows],
                      "stable": rows[-1]["label"] == "positioned",
                      "err": [[round(abs(v), 3) for v in r["err_mm"]] for r in rows]}
@@ -139,14 +139,14 @@ def hero_data():
 
 
 # one placement per condition, replayed for both policies (DualHeadPPO/.cache/run_page_v2_capture.sh)
-CONDITIONS = {"p95": 10, "ood14": 20, "noise": 20, "scale": 20}  # fps: 10 is real time, 20 is 2x
+CONDITIONS = {"p85": 10, "ood14": 20, "noise": 20, "scale": 20}  # fps: 10 is real time, 20 is 2x
 
 
 def videos():
     # teaser: fixed camera az60, one frame per 3 policy steps -> 10 fps is real time
     teaser_crop = ((40, 1080), (700, 1856))
-    # PPO episode at its p95 final error (2.5 mm, never stable), same placement replayed for DivC-PPO
-    clips = {k: [frame(f"{k}_p95_v2_s42", r, "fixed_az60", (720, 648), teaser_crop) for r in episode(f"{k}_p95_v2_s42", 0)]
+    # PPO episode at its 85th-percentile final error (1.9 mm, never stable), same placement replayed for DivC-PPO
+    clips = {k: [frame(f"{k}_p85_v2_s42", r, "fixed_az60", (720, 648), teaser_crop) for r in episode(f"{k}_p85_v2_s42", 0)]
              for k in ("divc", "ppo")}
     n = max(map(len, clips.values())) + 12
     for key, f in clips.items():
@@ -159,7 +159,7 @@ def videos():
         pair(f"{cond}_world_45", left, right, "world_45", (640, 360), fps)
         for view, axis, size, crop, g in MACROS:
             macro_pair(f"{cond}_{view}", left, right, view, size, fps, axis, 0, crop, g)
-    pair("p95_wrist_bbox", "divc_p95_v2_s42", "ppo_p95_v2_s42", "wrist_bbox", (450, 450), 10)
+    pair("p85_wrist_bbox", "divc_p85_v2_s42", "ppo_p85_v2_s42", "wrist_bbox", (450, 450), 10)
 
 
 if __name__ == "__main__":

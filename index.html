@@ -55,7 +55,7 @@
       <h2 class="subtitle has-text-centered">
         DivC-PPO assigns each Cartesian axis its own reward stream, advantage, and clipped probability ratio.
       </h2>
-      <p class="has-text-centered is-size-7 note">Same object placement for both policies, seed 42, real time. DivC-PPO reaches stable success after 1.57&nbsp;s, where its clip ends. PPO never becomes stable and ends at 2.49&nbsp;mm at the 7&nbsp;s time limit. Traces show the absolute error per axis on a log scale, with the 1&nbsp;mm box shaded. <a href="#" id="replay">Replay</a></p>
+      <p class="has-text-centered is-size-7 note">Same object placement for both policies, seed 42, real time. DivC-PPO reaches stable success after 1.57&nbsp;s, where its clip ends. PPO never becomes stable and ends at 1.96&nbsp;mm at the 7&nbsp;s time limit, a near-target failure. Traces show the absolute error per axis on a log scale, with the 1&nbsp;mm box shaded. <a href="#" id="replay">Replay</a></p>
     </div>
   </div>
 </section>
@@ -112,22 +112,22 @@
       <div class="wide">
         <p class="view-title">Wide view</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" src="static/video/p95_world_45.webm" poster="static/img/p95_world_45_poster.webp" muted loop playsinline preload="none" aria-label="Wide view at 45 degrees, DivC-PPO left and PPO right"></video>
+        <video class="result" src="static/video/p85_world_45.webm" poster="static/img/p85_world_45_poster.webp" muted loop playsinline preload="none" aria-label="Wide view at 45 degrees, DivC-PPO left and PPO right"></video>
       </div>
       <div class="wide">
         <p class="view-title">Front view</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" src="static/video/p95_world_macro_front.webm" poster="static/img/p95_world_macro_front_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along Y, DivC-PPO left and PPO right"></video>
+        <video class="result" src="static/video/p85_world_macro_front.webm" poster="static/img/p85_world_macro_front_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along Y, DivC-PPO left and PPO right"></video>
       </div>
       <div>
         <p class="view-title">Side view</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" src="static/video/p95_world_macro_side.webm" poster="static/img/p95_world_macro_side_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along X, DivC-PPO left and PPO right"></video>
+        <video class="result" src="static/video/p85_world_macro_side.webm" poster="static/img/p85_world_macro_side_poster.webp" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top seen along X, DivC-PPO left and PPO right"></video>
       </div>
       <div>
         <p class="view-title">Wrist camera with the YOLO11n box</p>
         <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" src="static/video/p95_wrist_bbox.webm" poster="static/img/p95_wrist_bbox_poster.webp" muted loop playsinline preload="none" aria-label="Wrist camera with the YOLO detection box, DivC-PPO left and PPO right"></video>
+        <video class="result" src="static/video/p85_wrist_bbox.webm" poster="static/img/p85_wrist_bbox_poster.webp" muted loop playsinline preload="none" aria-label="Wrist camera with the YOLO detection box, DivC-PPO left and PPO right"></video>
       </div>
     </div>
 
