@@ -1,36 +1,26 @@
-"""Rebuild every asset under static/ from the paper and capture sources (local only).
+"""Rebuild every asset under static/ from the paper figures and the Isaac captures (local only).
 
-Run from anywhere: python3 tools/build_assets.py
-Needs pdftocairo, ImageMagick `convert`, and OpenCV (VP9 WebM writer).
+Run: python3 tools/build_assets.py
+Needs pdftocairo, ImageMagick `convert`, and OpenCV with a VP9 WebM writer.
+All videos come from frames rendered by DualHeadPPO/tools/play_paper_capture.py
+(Ablation 15, seed 42, deterministic policy). No new rollouts are made here.
 """
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 IMG, VID = ROOT / "static/img", ROOT / "static/video"
 PAPER = Path("/home/cislab301b/Aditya/Writing/paper/figures")
-CAP = PAPER / "isaac_captures"
-PLAY = Path("/home/cislab301b/Aditya/DualHeadPPO/play_outputs")
+CAP = Path("/home/cislab301b/Aditya/DualHeadPPO/play_outputs/paper_capture")
+POLICY_HZ = 30
+GAP = 8  # white gutter between DivC-PPO and PPO halves
+SQUARE = {"closeup_side": ((0, 1080), (360, 1440))}  # square crop of 16:9 views around the gripper
 
-FIGS = {"fig1": "Fig1_fixed", "fig2": "Fig2", "fig3": "fig3_eval_error",
-        "fig4": "fig4_training", "fig5": "fig5_robustness"}
-
-# Ablation 15 seed 42 evaluation runs with wrist-camera recordings
-WRIST = {
-    "wrist_divc": PLAY / "2026-10-19_11-31-06_PPO_single_sym_decomposed_policy_2026-10-31_08-05-02/camera_det_2026-10-31_08-05-02.mp4",
-    "wrist_ppo": PLAY / "2026-10-19_10-17-42_PPO_single_sym_policy_2026-10-31_08-08-01/camera_det_2026-10-31_08-08-01.mp4",
-}
-
-# Same placement (nominal ep0), fixed camera az60, one frame every 3 policy steps (0.1 s at 30 Hz)
-SEQ = {"divc": ("divc_nominal_seq_s42", 47), "ppo": ("ppo_nominal_seq_s42", 65)}
-CROP = (slice(40, 1080), slice(700, 1856))  # rows, cols: arm + target, drops empty floor
-SEQ_SIZE = (720, 648)
-FPS = 10
-HOLD_S = 1.2  # pause on the positioned frame before the loop restarts
+FIGS = {"fig2": "Fig2", "fig3": "fig3_eval_error"}
 
 
 def run(*cmd):
@@ -40,51 +30,99 @@ def run(*cmd):
 def figures():
     for name, src in FIGS.items():
         png = IMG / f"{name}.png"
-        run("pdftocairo", "-png", "-singlefile", "-scale-to-x", "2000", "-scale-to-y", "-1", str(PAPER / f"{src}.pdf"), str(png.with_suffix("")))
+        run("pdftocairo", "-png", "-singlefile", "-scale-to-x", "2000", "-scale-to-y", "-1",
+            str(PAPER / f"{src}.pdf"), str(png.with_suffix("")))
         run("convert", str(png), "-quality", "88", str(IMG / f"{name}.webp"))
         png.unlink()
 
 
-def sequences():
-    hero = {}
-    for key, (stem, t_end) in SEQ.items():
-        frames = [CAP / f"D_sequence_filmstrip/{stem}__ep00_t{t:03d}_{lab}_fixed_az60.png"
-                  for t, lab in [(t, "start" if t == 0 else "seq") for t in range(0, t_end, 3)]]
-        frames.append(CAP / f"D_sequence_filmstrip/{stem}__ep00_t{t_end:03d}_positioned_fixed_az60.png")
-        hero[key] = {"t_end": t_end, "frames": len(frames)}
-        out = cv2.VideoWriter(str(VID / f"seq_{key}.webm"), cv2.VideoWriter_fourcc(*"VP90"), FPS, SEQ_SIZE)
-        assert out.isOpened(), "VP9 writer unavailable"
-        imgs = [cv2.resize(cv2.imread(str(f))[CROP], SEQ_SIZE, interpolation=cv2.INTER_AREA) for f in frames]
-        # pad both clips to the PPO length so the two videos stay in step
-        n_total = (SEQ["ppo"][1] // 3 + 1) + int(HOLD_S * FPS)
-        for i in range(n_total):
-            out.write(imgs[min(i, len(imgs) - 1)])
-        out.release()
-        cv2.imwrite(str(IMG / f"seq_{key}_poster.webp"), imgs[0], [cv2.IMWRITE_WEBP_QUALITY, 80])
+def episode(run_dir, ep, last_t=None):
+    """Rows of the capture log for one episode, up to last_t (the step after 209 is the reset)."""
+    log = json.loads((CAP / run_dir / "capture_log.json").read_text())
+    rows = [r for r in log if r["ep"] == ep and r["t"] <= 209]
+    if last_t is not None:
+        rows = [r for r in rows if r["t"] <= last_t]
+    return rows
 
-    # per-axis error (mm) for the hero trace, straight from the capture logs
-    for key, (stem, _) in SEQ.items():
-        log = json.loads((CAP / f"logs/{stem}_capture_log.json").read_text())
-        rows = [r for r in log if r["ep"] == 0 and r["label"] in ("start", "seq", "positioned")]
-        hero[key]["t"] = [r["t"] for r in rows]
-        hero[key]["err"] = [[round(abs(v), 3) for v in r["err_mm"]] for r in rows]
-    hero["fps"], hero["policy_hz"], hero["stride"] = FPS, 30, 3
+
+def frame(run_dir, row, view, size, crop=None):
+    path = CAP / run_dir / f"ep{row['ep']:02d}_t{row['t']:03d}_{row['label']}_{view}.png"
+    img = cv2.imread(str(path))
+    assert img is not None, path
+    if crop:
+        (y0, y1), (x0, x1) = crop
+        img = img[y0:y1, x0:x1]
+    return cv2.resize(img, size, interpolation=cv2.INTER_AREA)
+
+
+def write(name, frames, fps, poster=0):
+    h, w = frames[0].shape[:2]
+    out = cv2.VideoWriter(str(VID / f"{name}.webm"), cv2.VideoWriter_fourcc(*"VP90"), fps, (w, h))
+    assert out.isOpened(), "VP9 writer unavailable"
+    for f in frames:
+        out.write(f)
+    out.release()
+    cv2.imwrite(str(IMG / f"{name}_poster.webp"), frames[poster], [cv2.IMWRITE_WEBP_QUALITY, 80])
+
+
+def pair(name, left, right, view, size, fps, hold_s=1.2, crop=None, eps=(0, 0), last=(None, None)):
+    """DivC-PPO (left) and PPO (right) side by side; the shorter clip holds its last frame."""
+    crop = crop or SQUARE.get(view)
+    a = [frame(left, r, view, size, crop) for r in episode(left, eps[0], last[0])]
+    b = [frame(right, r, view, size, crop) for r in episode(right, eps[1], last[1])]
+    n = max(len(a), len(b)) + int(hold_s * fps)
+    gap = np.full((size[1], GAP, 3), 255, np.uint8)
+    write(name, [np.hstack([a[min(i, len(a) - 1)], gap, b[min(i, len(b) - 1)]]) for i in range(n)], fps, poster=-1)
+
+
+def single(name, run_dir, ep, views, size, fps, hold_s=1.0):
+    rows = episode(run_dir, ep)
+    gap = np.full((size[1], GAP, 3), 255, np.uint8)
+    frames = []
+    for r in rows:
+        tiles = [frame(run_dir, r, v, size, SQUARE.get(v)) for v in views]
+        frames.append(np.hstack(sum([[t, gap] for t in tiles], [])[:-1]))
+    frames += [frames[-1]] * int(hold_s * fps)
+    write(name, frames, fps, poster=-1)
+
+
+def hero_data():
+    """Per-axis error (mm) per captured step for the teaser traces."""
+    hero = {"fps": 10, "policy_hz": POLICY_HZ, "stride": 3}
+    for key, run_dir, t_end in (("divc", "divc_nominal_seq_s42", 47), ("ppo", "ppo_nominal_seq_s42", 65)):
+        rows = episode(run_dir, 0, t_end)
+        hero[key] = {"t_end": t_end, "frames": len(rows), "t": [r["t"] for r in rows],
+                     "err": [[round(abs(v), 3) for v in r["err_mm"]] for r in rows]}
     (ROOT / "static/hero.json").write_text(json.dumps(hero, separators=(",", ":")))
 
 
-def wrist():
-    for name, src in WRIST.items():
-        shutil.copyfile(src, VID / f"{name}.mp4")  # already H.264, 640x640, 30 fps
-        cap = cv2.VideoCapture(str(src))
-        ok, frame = cap.read()
-        assert ok, src
-        cv2.imwrite(str(IMG / f"{name}_poster.webp"), frame, [cv2.IMWRITE_WEBP_QUALITY, 80])
+def videos():
+    W16 = (800, 450)
+    # teaser: fixed camera az60, one frame per 3 policy steps -> 10 fps is real time
+    teaser_crop = ((40, 1080), (700, 1856))
+    for key, run_dir, t_end in (("divc", "divc_nominal_seq_s42", 47), ("ppo", "ppo_nominal_seq_s42", 65)):
+        rows = episode(run_dir, 0, t_end)
+        f = [frame(run_dir, r, "fixed_az60", (720, 648), teaser_crop) for r in rows]
+        write(f"seq_{key}", f + [f[-1]] * (65 // 3 + 1 - len(f) + 12), 10)
+
+    # nominal, same placement (ep0), stopped at the first stable step
+    for view, size in (("overview_az60", W16), ("closeup_side", (540, 540)), ("wrist_bbox", (450, 450))):
+        pair(f"nom_{view}", "divc_nominal_seq_s42", "ppo_nominal_seq_s42", view, size, 10, last=(47, 65))
+
+    # PPO near-target failure (ep1): never stable within 7 s
+    single("ppo_fail", "ppo_nominal_seq_s42", 1, ("closeup_side", "wrist_bbox"), (450, 450), 20)
+
+    # 14 cm placement radius, same placement per episode, one frame per 10 steps -> 6 fps is 2x speed
+    for ep in (0, 1, 2):
+        pair(f"ood_ep{ep}", "divc_ood14_s42", "ppo_ood14_s42", "closeup_side", (540, 540), 6, eps=(ep, ep))
 
 
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)
     VID.mkdir(parents=True, exist_ok=True)
+    for old in list(IMG.glob("*")) + list(VID.glob("*")):
+        old.unlink()
     figures()
-    sequences()
-    wrist()
+    hero_data()
+    videos()
     print("done")

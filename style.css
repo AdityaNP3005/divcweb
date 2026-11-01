@@ -1,135 +1,60 @@
-@font-face { font-family: "Source Serif 4"; src: url(static/fonts/source-serif-4-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Source Serif 4"; src: url(static/fonts/source-serif-4-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
-@font-face { font-family: "Source Serif 4"; src: url(static/fonts/source-serif-4-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Barlow Semi Condensed"; src: url(static/fonts/barlow-semi-condensed-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Barlow Semi Condensed"; src: url(static/fonts/barlow-semi-condensed-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
-
-/* Light theme only. Layout follows the common project-page pattern (Nerfies, Eureka):
-   centered header, full-width teaser, centered section titles, justified text column. */
+/* Nerfies-style project page on Bulma. Light theme only. */
 :root {
-  --bg: #FFFFFF;
-  --band: #F5F7F8;        /* Fig. 2 slate fill, used for the teaser band */
-  --ink: #1E2A32;
-  --muted: #5F7380;
-  --rule: #DDE3E8;
-  --btn: #2B3A44;
-  --divc: #6A3D9A;
-  --ppo: #78909C;
-  --x: #FF3610;
+  --x: #FF3610;   /* axis colours from Fig. 2 */
   --y: #4D9900;
   --z: #1F5FD0;
-  --boxband: rgba(106, 61, 154, 0.08);
-  --serif: "Source Serif 4", Georgia, serif;
-  --cond: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
-  color-scheme: light;
+  --muted: #6b6b6b;
 }
+html, body { background: #fff; }
+body { font-family: "Noto Sans", sans-serif; color: #363636; }
+.title, .subtitle, .publication-title, .publication-authors, .teaser, .run-label, .pair-labels, .readout, .button { font-family: "Google Sans", "Noto Sans", sans-serif; }
 
-*, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 400 18px/1.62 var(--serif);
-}
-a { color: var(--divc); text-underline-offset: 0.18em; }
-a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--divc); outline-offset: 3px; }
+.publication-title { line-height: 1.2 !important; margin-bottom: 1.25rem !important; }
+.publication-authors { color: #4a4a4a; }
+.affil { margin-top: .25rem; color: var(--muted); }
+.author-block { display: inline-block; margin: 0 .2rem; }
+.publication-links { margin-top: 1.5rem; }
+.link-block { display: inline-block; margin: 5px 3px; }
+.button[disabled] { opacity: .45; }
 
-.container { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
-
-/* Header */
-header.masthead { text-align: center; padding: 64px 0 28px; }
-h1 { font: 600 clamp(30px, 4.6vw, 44px)/1.15 var(--cond); margin: 0 auto 18px; max-width: 34ch; }
-.authors { margin: 0; font-size: 20px; }
-.affil { margin: 6px 0 0; font-size: 16px; color: var(--muted); }
-.links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
-.btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  font: 500 17px/1 var(--cond);
-  color: #FFFFFF;
-  background: var(--btn);
-  text-decoration: none;
-  padding: 10px 18px;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.btn svg { width: 17px; height: 17px; fill: currentColor; }
-a.btn:hover, button.btn:hover { background: var(--ink); }
-.btn[aria-disabled="true"] { background: #E4E9EC; color: var(--muted); cursor: default; }
-
-/* Teaser: approach videos with per-axis error traces */
-.teaser { background: var(--band); padding: 28px 0 24px; }
-.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.run { background: #FFFFFF; padding: 12px 12px 8px; border-radius: 6px; }
-.run h3 { font: 600 20px/1 var(--cond); margin: 2px 0 10px; text-align: center; }
-.run.divc h3 { color: var(--divc); }
-.run.ppo h3 { color: var(--ppo); }
-.run video { display: block; width: 100%; height: auto; aspect-ratio: 720 / 648; background: #F2F2F2; border-radius: 4px; }
-.trace { display: block; width: 100%; height: auto; margin-top: 6px; overflow: visible; }
-.trace text { font: 500 13px var(--cond); fill: var(--muted); }
-.trace .grid { stroke: var(--rule); stroke-width: 1; }
-.trace .band { fill: var(--boxband); }
-.trace .bandline { stroke: var(--divc); stroke-dasharray: 3 3; stroke-width: 1; }
-.trace .cursor { stroke: var(--ink); stroke-width: 1; }
-.readout { display: flex; justify-content: center; gap: 14px; font: 500 15px/1.3 var(--cond); font-variant-numeric: tabular-nums; margin: 8px 0 0; color: var(--muted); }
+/* Teaser */
+.teaser .hero-body { padding-top: 0; padding-bottom: 2.5rem; }
+.teaser video { width: 100%; height: auto; display: block; border-radius: 10px; background: #f2f2f2; }
+.run-label { text-align: center; font-size: 1.25rem; font-weight: 600; margin-bottom: .5rem; }
+.readout { display: flex; justify-content: center; gap: 1.1rem; margin: .6rem 0 .1rem; font-size: .95rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .readout b { font-weight: 600; }
 .readout .x b { color: var(--x); } .readout .y b { color: var(--y); } .readout .z b { color: var(--z); }
-.subtitle { text-align: center; font-size: 17px; color: var(--ink); margin: 18px auto 0; max-width: 800px; }
-.subtitle .note { display: block; font-size: 15px; color: var(--muted); margin-top: 6px; }
-.replay { font: 500 15px/1 var(--cond); margin-left: 6px; padding: 5px 12px; border: 1px solid var(--rule); border-radius: 999px; background: #FFFFFF; color: var(--ink); cursor: pointer; }
+.trace { display: block; width: 100%; height: auto; overflow: visible; }
+.trace text { font: 12px "Google Sans", sans-serif; fill: #7a7a7a; }
+.trace .grid { stroke: #e8e8e8; }
+.trace .band { fill: rgba(72, 199, 142, .10); }
+.trace .bandline { stroke: #48c78e; stroke-dasharray: 3 3; }
+.trace .cursor { stroke: #363636; }
+.teaser .subtitle { max-width: 900px; margin: 1.5rem auto .5rem; line-height: 1.5; }
+.note { color: var(--muted); }
 
-/* Sections: centered title, justified text column */
-section { padding: 44px 0 8px; }
-section h2 { font: 600 30px/1.2 var(--cond); text-align: center; margin: 0 0 20px; }
-section h3.sub { font: 600 22px/1.2 var(--cond); text-align: center; margin: 36px 0 14px; }
-section .container > p { max-width: 800px; margin: 0 auto 16px; }
+/* Body */
+.section { padding: 3rem 1.5rem; }
+.figure { display: block; width: 100%; height: auto; }
+.caption { max-width: 900px; margin: .75rem auto 0; font-size: .95rem; color: var(--muted); text-align: center; }
+.caption.left { text-align: left; margin-top: .75rem; }
+.lead { max-width: 900px; margin: 0 auto 1.5rem; color: #4a4a4a; }
+h3.title.is-4 { margin-top: 3.5rem; }
 
-/* Figures */
-figure { margin: 12px auto 28px; }
-figure img { display: block; width: 100%; height: auto; }
-figure.col { max-width: 680px; }
-figcaption { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 10px auto 0; max-width: 800px; }
-figcaption b { color: var(--ink); font-weight: 600; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 680px; margin: 12px auto 8px; }
-.pair figure { margin: 0; }
-.tag { font: 600 16px/1.2 var(--cond); margin: 8px 0 0; text-align: center; }
-.tag.divc { color: var(--divc); } .tag.ppo { color: var(--ppo); }
-video.clip { display: block; width: 100%; height: auto; aspect-ratio: 1; background: #000; border-radius: 4px; }
+.result-row { margin: 1rem 0 0; }
+.result-table th, .result-table td { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.result-table th:first-child, .result-table td:first-child { text-align: left; }
+.result-table tr.ours td { font-weight: 700; }
 
-/* Tables: booktabs rules, tabular figures */
-.table-wrap { overflow-x: auto; margin: 4px auto 24px; max-width: 680px; }
-table { border-collapse: collapse; width: 100%; font-size: 16px; font-variant-numeric: tabular-nums; }
-caption { caption-side: top; text-align: center; font: 600 17px/1.3 var(--cond); padding-bottom: 8px; }
-thead th { font: 600 16px/1.2 var(--cond); text-align: right; padding: 8px 10px; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); }
-tbody td { text-align: right; padding: 6px 10px; }
-tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); }
-th:first-child, td:first-child { text-align: left; padding-left: 0; }
-td.best { color: var(--divc); font-weight: 600; }
-td.group { font: 600 15px/1.2 var(--cond); color: var(--muted); padding-top: 14px; }
-.colgroup th { border-top: 1.5px solid var(--ink); border-bottom: 0; text-align: center; }
-.colgroup + tr th { border-top: 0; }
-
-details { margin: 0 auto 28px; max-width: 680px; }
-summary { font: 600 18px/1.3 var(--cond); cursor: pointer; padding: 6px 0; text-align: center; }
-details[open] summary { margin-bottom: 8px; }
+video.result { display: block; width: 100%; height: auto; border-radius: 10px; background: #f2f2f2; margin-bottom: 1.25rem; }
+.pair-labels { display: grid; grid-template-columns: 1fr 1fr; text-align: center; font-weight: 600; font-size: 1.1rem; margin-bottom: .35rem; }
+.pair-labels.small { font-size: 1rem; }
+.side-text { color: #4a4a4a; line-height: 1.6; }
 
 /* BibTeX */
-.bib { position: relative; max-width: 800px; margin: 0 auto; }
-pre {
-  margin: 0;
-  background: var(--band);
-  padding: 18px 20px;
-  border-radius: 6px;
-  overflow-x: auto;
-  font: 14px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-.copy { position: absolute; top: 10px; right: 10px; padding: 7px 14px; font-size: 15px; }
+.bib { position: relative; }
+.bib pre { background: #f5f5f5; border-radius: 8px; padding: 1.25rem 1.5rem; font-size: .85rem; }
+.bib .copy { position: absolute; top: .75rem; right: .75rem; }
 
-footer { margin-top: 48px; background: var(--band); padding: 28px 0 40px; font-size: 15px; color: var(--muted); text-align: center; }
-
-@media (max-width: 640px) {
-  body { font-size: 17px; }
-  header.masthead { padding-top: 40px; }
-  .hero-grid, .pair { grid-template-columns: 1fr; }
-}
+.footer { padding: 2.5rem 1.5rem 3rem; color: var(--muted); }
+.footer p + p { margin-top: .4rem; }
