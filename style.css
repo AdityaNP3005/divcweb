@@ -68,7 +68,6 @@ video.result { display: block; width: 100%; height: auto; border-radius: 10px; b
 .views { display: grid; grid-template-columns: 1fr 1fr; gap: 2.75rem 2rem; margin-top: 2rem; }
 .views > .wide { grid-column: 1 / -1; }
 .view-title { font-family: "Google Sans", sans-serif; font-size: 1.3rem; font-weight: 600; color: #222; margin: 0 0 .2rem; text-align: center; }
-.view-sub { text-align: center; font-size: .95rem; color: var(--muted); margin: 0 0 .75rem; }
 .pair-labels { color: var(--muted); font-weight: 500; font-size: 1rem; margin-bottom: .4rem; }
 .views video.result { margin-bottom: 0; }
 .exp-tabs { margin-top: 1.5rem; }
