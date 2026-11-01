@@ -64,7 +64,6 @@ video.result { display: block; width: 100%; height: auto; border-radius: 10px; b
 .footer { padding: 2.5rem 1.5rem 3rem; color: var(--muted); }
 .footer p + p { margin-top: .4rem; }
 
-.still-grid { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 8px 10px; align-items: center; margin: .5rem 0 0; }
-.still-grid b { font-family: "Google Sans", sans-serif; font-weight: 600; text-align: center; }
-.still-grid b.row { writing-mode: vertical-rl; transform: rotate(180deg); }
-.still-grid img { display: block; width: 100%; height: auto; border-radius: 8px; background: #f2f2f2; }
+.ood-views { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; }
+.view-title { text-align: center; font-family: "Google Sans", sans-serif; font-size: 1.05rem; color: #4a4a4a; margin-bottom: .25rem; }
+.ood-views > div:nth-child(-n+2) { grid-column: 1 / -1; }  /* front and side need the width to show the reach */

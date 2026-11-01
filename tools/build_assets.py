@@ -18,6 +18,7 @@ PAPER = Path("/home/cislab301b/Aditya/Writing/paper/figures")
 CAP = Path("/home/cislab301b/Aditya/DualHeadPPO/play_outputs/paper_capture")
 POLICY_HZ = 30
 GAP = 8  # white gutter between DivC-PPO and PPO halves
+SQUARE_MACRO = ((0, 1080), (420, 1500))
 SQUARE = {"closeup_side": ((0, 1080), (360, 1440))}  # square crop of 16:9 views around the gripper
 
 FIGS = {"fig2": "Fig2", "fig3": "fig3_eval_error"}
@@ -40,6 +41,9 @@ def episode(run_dir, ep, last_t=None):
     """Rows of the capture log for one episode, up to last_t (the step after 209 is the reset)."""
     log = json.loads((CAP / run_dir / "capture_log.json").read_text())
     rows = [r for r in log if r["ep"] == ep and r["t"] <= 209]
+    pos = [i for i, r in enumerate(rows) if r["label"] == "positioned"]
+    if pos:  # after the first stable step the scripted grasp takes over
+        rows = rows[:pos[0] + 1]
     if last_t is not None:
         rows = [r for r in rows if r["t"] <= last_t]
     return rows
@@ -112,19 +116,13 @@ def videos():
     # PPO near-target failure (ep1): never stable within 7 s
     single("ppo_fail", "ppo_nominal_seq_s42", 1, ("closeup_side", "wrist_bbox"), (450, 450), 20)
 
-    # 14 cm placement radius, same placement per episode, one frame per 10 steps -> 6 fps is 2x speed.
-    # The overview camera shows how far the arm travels; front and side cameras exist only at the
-    # start and final steps, so they are shown as stills.
+    # 14 cm placement radius, same placement per episode, one frame per 3 steps -> 20 fps is 2x speed.
+    # Front and side show the reach; the macro cameras sit 22 cm from the object top.
     for ep in (0, 1, 2):
-        pair(f"ood_ep{ep}", "divc_ood14_s42", "ppo_ood14_s42", "overview_az60", W16, 6, eps=(ep, ep))
-        for view in ("overview_front", "overview_side"):
-            for tag, run_dir, row in (("start", "divc_ood14_s42", 0), ("divc", "divc_ood14_s42", -1), ("ppo", "ppo_ood14_s42", -1)):
-                r = episode(run_dir, ep)[row]
-                r = dict(r, label=r["label"]) if r["label"] in ("start", "final") else None
-                assert r, (run_dir, ep, row)
-                cv2.imwrite(str(IMG / f"ood_ep{ep}_{view.split('_')[1]}_{tag}.webp"),
-                            frame(run_dir, r, view, (640, 360)), [cv2.IMWRITE_WEBP_QUALITY, 82])
-
+        for view, size in (("overview_front", (640, 360)), ("overview_side", (640, 360)),
+                           ("closeup_side", (400, 400)), ("macro_az90", (400, 400))):
+            pair(f"ood_ep{ep}_{view}", "divc_ood14_vid_s42", "ppo_ood14_vid_s42", view, size, 20, eps=(ep, ep),
+                 crop=SQUARE_MACRO if view.startswith("macro") else None)
 
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)

@@ -136,24 +136,39 @@
     </div>
 
     <h3 class="title is-4 has-text-centered">Object placed 14&nbsp;cm away</h3>
-    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. The overview video plays the 7&nbsp;s episode at 2&times; speed, and the front and side views show the start and the final step. At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
+    <p class="has-text-centered lead">The placement radius is outside the &plusmn;4&nbsp;cm training range. Same placement for both policies in each episode. All views play the 7&nbsp;s episode at 2&times; speed. The front and side views show how far the arm has to reach, and the close-ups show where the fingertips end up over the object top. At 14&nbsp;cm over three seeds, DivC-PPO reaches 1.195&nbsp;mm and 46.0% stable success, and PPO 12.717&nbsp;mm and 3.0%.</p>
     <div class="columns is-centered">
       <div class="column">
         <div class="tabs is-toggle is-centered is-small ep-tabs">
           <ul>
-            <li class="is-active"><a data-ep="0" data-cap="Final error: DivC-PPO 1.45&nbsp;mm, PPO 5.49&nbsp;mm.">Episode 1</a></li>
-            <li><a data-ep="1" data-cap="Final error: DivC-PPO 1.30&nbsp;mm, PPO 3.72&nbsp;mm.">Episode 2</a></li>
-            <li><a data-ep="2" data-cap="Final error: DivC-PPO 1.81&nbsp;mm, PPO 7.94&nbsp;mm.">Episode 3</a></li>
+            <li class="is-active"><a data-ep="0" data-cap="Final error: DivC-PPO 1.49&nbsp;mm, PPO 5.50&nbsp;mm.">Episode 1</a></li>
+            <li><a data-ep="1" data-cap="Final error: DivC-PPO 1.29&nbsp;mm, PPO 3.67&nbsp;mm.">Episode 2</a></li>
+            <li><a data-ep="2" data-cap="Final error: DivC-PPO 1.80&nbsp;mm, PPO 7.93&nbsp;mm.">Episode 3</a></li>
           </ul>
         </div>
-        <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
-        <video class="result" id="ood-video" src="static/video/ood_ep0.webm" poster="static/img/ood_ep0_poster.webp" muted loop playsinline preload="none" aria-label="Object at 14 cm, overview camera, DivC-PPO left and PPO right"></video>
-        <div class="still-grid" id="ood-stills">
-          <span></span><b>Start</b><b>DivC-PPO, final</b><b>PPO, final</b>
-          <b class="row">Front</b><img data-v="front_start" alt="Front view at the start"><img data-v="front_divc" alt="Front view, DivC-PPO final"><img data-v="front_ppo" alt="Front view, PPO final">
-          <b class="row">Side</b><img data-v="side_start" alt="Side view at the start"><img data-v="side_divc" alt="Side view, DivC-PPO final"><img data-v="side_ppo" alt="Side view, PPO final">
+        <div class="ood-views">
+          <div>
+            <p class="view-title">Front</p>
+            <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+            <video class="result ood" data-view="overview_front" muted loop playsinline preload="none" aria-label="Front view, DivC-PPO left and PPO right"></video>
+          </div>
+          <div>
+            <p class="view-title">Side</p>
+            <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+            <video class="result ood" data-view="overview_side" muted loop playsinline preload="none" aria-label="Side view, DivC-PPO left and PPO right"></video>
+          </div>
+          <div>
+            <p class="view-title">Close-up, side</p>
+            <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+            <video class="result ood" data-view="closeup_side" muted loop playsinline preload="none" aria-label="Close-up of the gripper above the object, DivC-PPO left and PPO right"></video>
+          </div>
+          <div>
+            <p class="view-title">Fingertips at the object top</p>
+            <div class="pair-labels"><span>DivC-PPO</span><span>PPO</span></div>
+            <video class="result ood" data-view="macro_az90" muted loop playsinline preload="none" aria-label="Close-up of the fingertips over the object top from the side, DivC-PPO left and PPO right"></video>
+          </div>
         </div>
-        <p class="caption" id="ood-cap">Final error: DivC-PPO 1.45&nbsp;mm, PPO 5.49&nbsp;mm.</p>
+        <p class="caption" id="ood-cap">Final error: DivC-PPO 1.49&nbsp;mm, PPO 5.50&nbsp;mm.</p>
       </div>
     </div>
   </div>
@@ -191,20 +206,24 @@
     setTimeout(() => (copy.textContent = "Copy"), 1800);
   });
 
-  // 14 cm episodes share one player and one still grid
-  const setStills = ep => document.querySelectorAll("#ood-stills img").forEach(i => (i.src = `static/img/ood_ep${ep}_${i.dataset.v}.webp`));
-  setStills(0);
+  // 14 cm episodes: the tabs switch all four views
+  const setOod = ep => document.querySelectorAll("video.ood").forEach(v => {
+    v.src = `static/video/ood_ep${ep}_${v.dataset.view}.webm`;
+    v.poster = `static/img/ood_ep${ep}_${v.dataset.view}_poster.webp`;
+    if (v.dataset.visible) v.play().catch(() => {});
+  });
+  setOod(0);
   document.querySelectorAll(".ep-tabs a").forEach(a => a.addEventListener("click", () => {
     document.querySelectorAll(".ep-tabs li").forEach(li => li.classList.toggle("is-active", li === a.parentElement));
-    const v = document.getElementById("ood-video");
-    v.src = `static/video/ood_ep${a.dataset.ep}.webm`; v.poster = `static/img/ood_ep${a.dataset.ep}_poster.webp`;
-    v.play().catch(() => {});
+    setOod(a.dataset.ep);
     document.getElementById("ood-cap").innerHTML = a.dataset.cap;
-    setStills(a.dataset.ep);
   }));
 
   // result clips play only while visible
-  const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? e.target.play().catch(() => {}) : e.target.pause()), { threshold: 0.25 });
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    e.target.dataset.visible = e.isIntersecting ? "1" : "";
+    e.isIntersecting ? e.target.play().catch(() => {}) : e.target.pause();
+  }), { threshold: 0.25 });
   document.querySelectorAll("video.result").forEach(v => io.observe(v));
 
   // teaser: per-axis error traces with a cursor on the video time
