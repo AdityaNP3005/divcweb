@@ -67,7 +67,7 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>Vision-guided positioning requires converting visual errors into precise Cartesian corrections. Standard PPO assigns one advantage and one probability ratio to the whole action, so the contributions of the X, Y, and Z axes can be mixed during policy optimization. This study presents DivC-PPO, a Cartesian-aligned credit assignment method for PPO that gives each axis its own reward stream, advantage, and clipped probability ratio. The actor and critic use only wrist-camera detection features and proprioception, while training rewards are computed from the simulator state.</p>
-          <p>On a simulated UR10e positioning task with objects placed within &plusmn;4&nbsp;cm along X and Y, DivC-PPO reaches a 3-D error of 0.337&nbsp;mm and 100% stable success over three seeds. PPO with the same critic, reward terms, and training budget achieves 1.167&nbsp;mm and 56.64%. Scrambling the axis mapping prevents learning, showing that the gain depends on the correct correspondence. Replacing the per-axis ratios with a shared ratio raises the error to 0.647&nbsp;mm. The advantage holds under small detection noise and wider target placement but disappears under larger noise and action-scale mismatch.</p>
+          <p>On a simulated UR10e positioning task with objects placed within &plusmn;4&nbsp;cm along X and Y, DivC-PPO reaches a 3-D error of 0.339&nbsp;mm and 99.98% stable success over five seeds. PPO with the same critic, reward terms, and training budget achieves 1.315&nbsp;mm and 51.13%. Scrambling the axis mapping prevents learning, showing that the gain depends on the correct correspondence. Replacing the per-axis ratios with a shared ratio raises the error to 0.647&nbsp;mm. The advantage holds under small detection noise and wider target placement but disappears under larger noise and action-scale mismatch.</p>
         </div>
       </div>
     </div>
@@ -85,17 +85,17 @@
 <section class="section">
   <div class="container is-max-widescreen">
     <h2 class="title is-3 has-text-centered">Results</h2>
-    <p class="has-text-centered lead">Nominal evaluation with deterministic inference, 1,024 episodes per seed, mean &plusmn; variation over three seeds.</p>
+    <p class="has-text-centered lead">Nominal evaluation with deterministic inference, 1,024 episodes per seed, mean &plusmn; variation over five seeds.</p>
 
     <div class="result-row">
       <div>
         <table class="table is-fullwidth result-table">
           <thead><tr><th>Metric</th><th>PPO</th><th>DivC-PPO</th></tr></thead>
           <tbody>
-            <tr><td>3-D error (mm)</td><td>1.167 &plusmn; 0.103</td><td class="ours">0.337 &plusmn; 0.059</td></tr>
-            <tr><td>Stable success (%)</td><td>56.64 &plusmn; 5.53</td><td class="ours">100.00 &plusmn; 0.00</td></tr>
-            <tr><td>Near-target failure (%)</td><td>41.15 &plusmn; 5.22</td><td class="ours">0.00 &plusmn; 0.00</td></tr>
-            <tr><td>Time to stable success (s)</td><td>2.14 &plusmn; 0.06</td><td class="ours">1.55 &plusmn; 0.03</td></tr>
+            <tr><td>3-D error (mm)</td><td>1.315 &plusmn; 0.230</td><td class="ours">0.339 &plusmn; 0.056</td></tr>
+            <tr><td>Stable success (%)</td><td>51.13 &plusmn; 8.76</td><td class="ours">99.98 &plusmn; 0.04</td></tr>
+            <tr><td>Near-target failure (%)</td><td>43.63 &plusmn; 6.74</td><td class="ours">0.02 &plusmn; 0.04</td></tr>
+            <tr><td>Time to stable success (s)</td><td>2.17 &plusmn; 0.20</td><td class="ours">1.57 &plusmn; 0.03</td></tr>
           </tbody>
         </table>
         <p class="caption left">Stable success: the end-effector stays inside the 1&nbsp;mm target box for 20 consecutive control steps (&asymp;0.67&nbsp;s). Near-target failure: the episode enters the 2&nbsp;mm per-axis box but never reaches stable success.</p>
@@ -140,9 +140,9 @@
         <li><a data-exp="scale">Action scale 3.0&nbsp;cm</a></li>
       </ul>
     </div>
-    <p class="has-text-centered lead exp-text" data-exp="ood14">Object placed 14&nbsp;cm from the nominal point, outside the &plusmn;4&nbsp;cm training range. Over three seeds: DivC-PPO 1.195&nbsp;mm and 46.0% stable success, PPO 12.717&nbsp;mm and 3.0%. This episode: DivC-PPO 1.46&nbsp;mm, PPO 5.45&nbsp;mm.</p>
-    <p class="has-text-centered lead exp-text" data-exp="noise" hidden>Gaussian noise with &sigma;&nbsp;=&nbsp;0.32&nbsp;px on the bounding-box center, the largest level at which DivC-PPO keeps its advantage. Over three seeds: DivC-PPO 0.622&nbsp;mm and 85.3% stable success, PPO 1.034&nbsp;mm and 56.0%. This episode: both reach stable success, DivC-PPO after 1.50&nbsp;s at 0.52&nbsp;mm and PPO after 2.80&nbsp;s at 1.12&nbsp;mm.</p>
-    <p class="has-text-centered lead exp-text" data-exp="scale" hidden>Action scale of 3.0&nbsp;cm instead of the 1.5&nbsp;cm used in training, where DivC-PPO fails. Over three seeds: DivC-PPO 9.521&nbsp;mm and 0% stable success, PPO 2.248&nbsp;mm and 46.0%. This episode: DivC-PPO 8.38&nbsp;mm, PPO 6.11&nbsp;mm.</p>
+    <p class="has-text-centered lead exp-text" data-exp="ood14">Object placed 14&nbsp;cm from the nominal point, outside the &plusmn;4&nbsp;cm training range. Over five seeds: DivC-PPO 1.530&nbsp;mm and 46.2% stable success, PPO 14.185&nbsp;mm and 2.0%. This episode: DivC-PPO 1.46&nbsp;mm, PPO 5.45&nbsp;mm.</p>
+    <p class="has-text-centered lead exp-text" data-exp="noise" hidden>Gaussian noise with &sigma;&nbsp;=&nbsp;0.32&nbsp;px on the bounding-box center, the largest level at which DivC-PPO keeps its advantage. Over five seeds: DivC-PPO 0.613&nbsp;mm and 85.8% stable success, PPO 1.284&nbsp;mm and 47.4%. This episode: both reach stable success, DivC-PPO after 1.50&nbsp;s at 0.52&nbsp;mm and PPO after 2.80&nbsp;s at 1.12&nbsp;mm.</p>
+    <p class="has-text-centered lead exp-text" data-exp="scale" hidden>Action scale of 3.0&nbsp;cm instead of the 1.5&nbsp;cm used in training, where DivC-PPO fails. Over five seeds: DivC-PPO 9.105&nbsp;mm and 0.4% stable success, PPO 2.036&nbsp;mm and 41.0%. This episode: DivC-PPO 8.38&nbsp;mm, PPO 6.11&nbsp;mm.</p>
     <div class="views">
       <div class="wide">
         <p class="view-title">Wide view</p>

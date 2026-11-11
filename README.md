@@ -18,7 +18,7 @@ The page is static HTML and CSS. It has no build step and no JavaScript framewor
 | Front and side views of the teaser episode | Isaac Sim rollout, seed 42 |
 | Deployment perturbations (14 cm placement, detection noise, action scale) | Paper Table V and Isaac Sim rollouts, seed 42 |
 
-The text and three-seed numbers come from the paper. The per-episode numbers come from the logs of the rendered rollouts. In every comparison video, both policies start from the same object placement.
+The text and five-seed numbers come from the paper. The per-episode numbers come from the logs of the rendered rollouts. In every comparison video, both policies start from the same object placement.
 
 ## Repository layout
 
